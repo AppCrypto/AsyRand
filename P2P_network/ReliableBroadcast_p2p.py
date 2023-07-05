@@ -3,7 +3,7 @@ import time
 import hashlib
 sys.path.insert(0, '..') # Import the files where the modules are located
 
-from p2pnetwork.node import Node
+import Node
 localhost="127.0.0.1"
 port_base=8000
 IP_base=10000
