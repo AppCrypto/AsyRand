@@ -59,6 +59,10 @@ class Node(threading.Thread):
 
         # A list of nodes that should be reconnected to whenever the connection was lost
         self.reconnect_to_nodes = []
+        self.NodesMesssage = []#收集节点收到的消息
+        self.NodesHash = [] #收集哈希值的
+        self.NodesEchoMessage = []#收集节点收到的Echo消息
+        self.NodesReadyMessage = []#收集节点收到的Ready消息
 
         # Create a unique ID for each node if the ID is not given.
         if id == None:
@@ -83,6 +87,10 @@ class Node(threading.Thread):
         self.debug = False
 
     @property
+
+    def add(self,item):
+        self.NodesMesssage.append(item)
+
     def all_nodes(self):
         """Return a list of all the nodes, inbound and outbound, that are connected with this node."""
         return self.nodes_inbound | self.nodes_outbound
@@ -383,5 +391,4 @@ class Node(threading.Thread):
 
     def __repr__(self):
         return '<Node {}:{} id: {}>'.format(self.host, self.port, self.id)
-
 
