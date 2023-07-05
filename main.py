@@ -77,4 +77,6 @@ print(nodes)
 nodes[2].send_to_nodes({"type": "initial", "v": "to do something"})
 print(delivered_msgs)
 print(hash_msgs)
+time.sleep(0.5)
+nodes[3].send_to_nodes({"type": "initial", "v": "to do something2"})
 
