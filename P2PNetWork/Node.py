@@ -4,7 +4,7 @@ import threading
 import random
 import hashlib
 
-from p2pnetwork.nodeconnection import NodeConnection
+from P2PNetWork.NodeConnection import NodeConnection
 
 """
 Author: Maurice Snoeren <macsnoeren(at)gmail.com>
@@ -87,9 +87,6 @@ class Node(threading.Thread):
         self.debug = False
 
     @property
-
-    def add(self,item):
-        self.NodesMesssage.append(item)
 
     def all_nodes(self):
         """Return a list of all the nodes, inbound and outbound, that are connected with this node."""
