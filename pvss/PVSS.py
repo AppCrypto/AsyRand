@@ -49,70 +49,42 @@ class PVSS():
             #print(C1[j])
 
         C = {"Com": Com, "C1": C1}        
-        # # create a NIZK proofs
-        # proof_sw = self.nizkabe.createproofs(C, access_policy)
-        # generate the proofs
         _s, _w = self.group.random(ZR), self.group.random(ZR)
         # choose a ploy(x)
         _pi = self.util.genShares(_w, t, N)
-        _C0 = (self.h ** _w) * (self.g ** _s)
+        _Com = (self.h ** _w) * (self.g ** _s)
         _C1 = {}
         for j in range(1, N + 1):
             _C1[j] = self.pks[j] ** _pi[j]
         #print(_C1[1])
-        Cp = {"_C0": _C0, "_C1": _C1}
-        # self.Cp = Cp
+        Cp = {"_Com": _Com, "_C1": _C1}
         c = self.group.hash(str(C) + str(Cp), ZR)
-        _s1 = _s - c * s
-        _w1 = _w - c * w
-        _pi1 = {}
+        stidle = _s - c * s
+        wtidle = _w - c * w
+        pitidle = {}
         for i in range(1, N+1):
-            _pi1[i] = _pi[i] - c * Pis[i]
-        NIZK_proofs = {"Cp": Cp, "c": c, "_s1": _s1, "_w1": _w1, "_pi1": _pi1}
+            pitidle[i] = _pi[i] - c * Pis[i]
+        NIZK_proofs = {"Cp": Cp, "c": c, "stidle": stidle, "wtidle": wtidle, "pitidle": pitidle}
         return {'C': C, 'proof_sw': NIZK_proofs}
-        # return { 'Com':Com,'C1':C1}
 
 
-    def ver(self, Com, proofs):
-        ver_result = True
-        if proofs["Cp"]["_C0"] != ((self.g ** proofs["_s1"]) * (self.h ** proofs["_w1"])) * (Com["Com"] ** proofs["c"]):
-            ver_result = False
-        # COMPLIE The verify of step 1
-        #print(proofs["Cp"]["_C1"])
+    def verify(self, Com, proofs):        
+        assert(proofs["Cp"]["_Com"] == ((self.g ** proofs["stidle"]) * (self.h ** proofs["wtidle"])) * (Com["Com"] ** proofs["c"]))
+            
         for i in range(1, N+1):
-            #print(proofs["_pi1"])
-            #print(proofs["Cp"]["_C1"][i])
-            #if proofs["Cp"]["_C1"][i] != (self.pks[i] ** proofs["_pi1"][i]) * (Com["C1"][i] ** proofs["c"]):
-            if proofs["Cp"]["_C1"][i] != (self.pks[i] ** proofs["_pi1"][i]) * (Com["C1"][i] ** proofs["c"]):
-                ver_result = False
-            #else:
-                #print("the verify of _C1%d is true" % i)
-
-        _gs = self.g ** proofs['_s1']
-        #print((_gs))
-
-        T = [i for i in range(1, N + 1)]
-        random.shuffle(T)
-        T = T[:t]
-        # T=[i for i in range(1, t+1)]
-        _cis = {}
-        for i in T:
-            _cis[i] = self.h ** proofs["_pi1"][i]
-        _mui = self.util.recoverCoefficients(list(_cis.keys()))
-        _hw = self.group.init(G1, 1)
-        for i in _cis:
-            _hw = _hw * (_cis[i]** _mui[i])
-
-        gs_ver = (proofs["Cp"]["_C0"]/(Com["Com"] ** proofs["c"])) / _hw
-        #print(gs_ver)
-        if _gs != gs_ver:
-            ver_result = False
-            #print("step3 is false!!")
-        print("the verification of proofs has been completed!!")
-        return ver_result
+            assert(proofs["Cp"]["_C1"][i] == (self.pks[i] ** proofs["pitidle"][i]) * (Com["C1"][i] ** proofs["c"]))
+            
+        wtidle = proofs['wtidle']        
+        indexArr = [i for i in range(1, N+1)]
+        y = self.util.recoverCoefficients(indexArr)
+        z = 0
+        for i in indexArr:
+            z += proofs["pitidle"][i]*y[i]
+    
+        assert(z == wtidle) 
+        return True
 
     def preRecon(self, C, ski, i):
-        # print(C["C1"][i]**(1/ski))
         return C["C1"][i]**(1/ski)
 
     
@@ -125,7 +97,6 @@ class PVSS():
         hw = self.group.init(G1, 1)
         for i in cis:
             hw = hw * (cis[i]** mui[i])
-        # print(hw)
         gs = C["Com"] / hw
         return gs
 
@@ -141,7 +112,7 @@ if __name__ == "__main__":
     #print(dist["proof_sw"])
     ver_C = dist["C"]
     ver_proof = dist["proof_sw"]
-    ver_result = pvss.ver(ver_C, ver_proof)
+    ver_result = pvss.verify(ver_C, ver_proof)
     if not ver_result:
         print("the verify is false")
         exit(0)
@@ -155,5 +126,5 @@ if __name__ == "__main__":
     for i in T:
         cis[i] = pvss.preRecon(dist["C"], pvss.sks[i],i)
     
-    test_gs = pvss.recon(dist["C"], cis)
-    print(test_gs)
+    testgstidle = pvss.recon(dist["C"], cis)
+    print(testgstidle)
