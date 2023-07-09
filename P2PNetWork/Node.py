@@ -59,10 +59,10 @@ class Node(threading.Thread):
 
         # A list of nodes that should be reconnected to whenever the connection was lost
         self.reconnect_to_nodes = []
-        self.NodesMesssage = []#收集节点收到的消息
-        self.NodesHash = [] #收集哈希值的
-        self.NodesEchoMessage = []#收集节点收到的Echo消息
-        self.NodesReadyMessage = []#收集节点收到的Ready消息
+        self.NodesMessage = dict()#收集节点收到的消息
+        
+        self.NodesEchoList = dict()#收集节点收到的Echo消息
+        self.NodesReadyList = dict()#收集节点收到的Ready消息
 
         # Create a unique ID for each node if the ID is not given.
         if id == None:
