@@ -88,7 +88,7 @@ for i in range(1,11):
     print(nodes[i].NodesMessage)
     print(nodes[i].NodesEchoList)
     print((nodes[i].NodesReadyList))
-print()
+
 #nodes[3].send_to_nodes({"epoch":2,"type": "initial", "v": "to do something2"})
 time.sleep(1)
 #nodes[5].NodeMessage.append(5)
