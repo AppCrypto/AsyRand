@@ -1,11 +1,12 @@
 import socket
-import time
+import time,sys
 import threading
 import random
 import hashlib
 
-from P2PNetWork.NodeConnection import NodeConnection
-
+from nodeConnection import NodeConnection
+# sys.path.append("P2PNetWork")
+from pvss import PVSS
 """
 Author: Maurice Snoeren <macsnoeren(at)gmail.com>
 Version: 0.3 beta (use at your own risk)
@@ -31,7 +32,7 @@ class Node(threading.Thread):
                  connected_node: Which connected node caused the event.
                  data: The data that is send by the connected node."""
 
-    def __init__(self, host, port, id=None, callback=None, max_connections=10):
+    def __init__(self, host, port, id=None, callback=None, max_connections=100):
         """Create instance of a Node. If you want to implement the Node functionality with a callback, you should 
            provide a callback method. It is preferred to implement a new node by extending this Node class. 
             host: The host name or ip address that is used to bind the TCP/IP server to.
@@ -85,6 +86,12 @@ class Node(threading.Thread):
 
         # Debugging on or off!
         self.debug = False
+
+        # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+        self.pvss = PVSS(self.id)
+        self.msgs={}
+        self.seq = 0
+        
 
     @property
 

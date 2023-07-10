@@ -1,45 +1,48 @@
 # realize fig1
 # -*- coding: utf-8 -*-
+import time, sys, os
+sys.path.append('..') 
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, GT, pair
-from utils.newsecretutils import SecretUtil
+from newsecretutils import SecretUtil
 from functools import reduce
-import utils.newjson as newjson
+import newjson as json
 from charm.toolbox.ABEnc import ABEnc, Input, Output
 import random
-import time, sys, os
 # import setting
-import utils.newjson as json
+# import utils.newjson as json
 
-ret = {}
-keyV = 1
-assertExe = True
 
-# config = json.loads(open("../NodeConfiguration.json","r").read())
-# N = len(config["nodes"])
-# t=int(N/3)+1
 groupObj = PairingGroup("SS512")
+from config import config
 
 def random_scalar():
     return groupObj.random(ZR)
 
 class PVSS():
 
-    def __init__(self, groupObj, N, t):
+    def __init__(self, ID):
         self.util = SecretUtil(groupObj, verbose=False)
         self.group = groupObj
-        self.g, self.h = self.group.random(G1), self.group.random(G1)
-        self.pks={}
-        self.N=N
-        self.t=t
+        self.g, self.h = json.loads(config['g']), json.loads(config['h'])
+        # self.pks={}        
+        # print(json.dumps({"g":self.g, "h":self.h}))
+        self.ID=ID
         self.sk=random_scalar()
         self.pk=self.h ** random_scalar()
+        self.pks={int(ID):self.pk}
+        # self.N=0
+        # self.t=0
 
     def setPK(self, i, pk):
         self.pks[i]=pk
 
+    def hash(self,obj):
+        return self.group.hash(str(obj), ZR)
 
     # PVSS——share
-    def share(self, s=None):
+    def share(self,  N, t, s=None):
+        self.N=N
+        self.t=t
         ts = time.time()
 
         w = self.group.random(ZR)        
@@ -48,7 +51,7 @@ class PVSS():
             s = self.group.random(ZR)
         
         Com = (self.h ** w) * (self.g ** s)
-        print(self.g ** s)
+        # print(self.g ** s)
         # print(self.h ** w)
         C1 = {}
         for j in range(1, self.N+1):
@@ -110,12 +113,14 @@ class PVSS():
 
 
 if __name__ == "__main__":
-
-    pvss = PVSS(groupObj, 22, 7)
-    sks={i: random_scalar() for i in range(0, pvss.N+1)}
-    [pvss.setPK(i, pvss.h ** sks[i]) for i in range(1, pvss.N+1)]
-    print("N=%d,t=%d" % (pvss.N, pvss.t))
-    dist = pvss.share()
+    N, t = 22, 7
+    sks={i: random_scalar() for i in range(0, N+1)}
+    
+    pvss = PVSS(groupObj)
+    [pvss.setPK(i, pvss.h ** sks[i]) for i in range(1, N+1)]
+    print("N=%d,t=%d" % (N, t))
+    dist = pvss.share(N,t)
+    
     # print("dis message size:",len(str(trans)))
     #print(dist["proof_sw"])
     ver_C = dist["C"]
@@ -125,9 +130,9 @@ if __name__ == "__main__":
         print("the verify is false")
         exit(0)
 
-    T=[i for i in range(1, pvss.N+1)]
+    T=[i for i in range(1, N+1)]
     random.shuffle(T)
-    T = T[:pvss.t]
+    T = T[:t]
     # T=[i for i in range(1, t+1)]
 
     cis={}
