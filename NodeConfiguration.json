@@ -2,6 +2,7 @@
 	"portBase":10100,
 	"g": "{\"_type\": \"element\", \"value\": {\"_type\": \"bytes\", \"value\": \"1:T+mG4wsTEuR1QOiXRG9Zlzy284x1q0eCEPTBpflhi6RPv3+uyp7jQ87BRFfbQfki6/KjqGlpJJKkrEdSnAaIOAA=\"}}", 
 	"h": "{\"_type\": \"element\", \"value\": {\"_type\": \"bytes\", \"value\": \"1:malHWB+RsyFOs4iDms93r2DFRNgbF+J6HnRQOKaxvwFAEG1FraBApgQITlI8GJfVwDkDuEH0VEwp6Z0Ts/QSEAE=\"}}",
+	"Re_1":1234567890987654321,
 	"nodes":{
 		"1":{"ip":"127.0.0.1"},
 		"2":{"ip":"127.0.0.1"},

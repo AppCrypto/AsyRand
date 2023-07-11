@@ -28,7 +28,7 @@ class PVSS():
         # print(json.dumps({"g":self.g, "h":self.h}))
         self.ID=ID
         self.sk=random_scalar()
-        self.pk=self.h ** random_scalar()
+        self.pk=self.h ** self.sk
         self.pks={int(ID):self.pk}
         # self.N=0
         # self.t=0
@@ -51,9 +51,11 @@ class PVSS():
             s = self.group.random(ZR)
         
         Com = (self.h ** w) * (self.g ** s)
-        # print(self.g ** s)
+        # if self.ID == '4':
+        #     print(self.g ** s)
         # print(self.h ** w)
         C1 = {}
+        # print(self.pks)
         for j in range(1, self.N+1):
             C1[j] = self.pks[j] ** Pis[j]
             #print(C1[j])
@@ -74,6 +76,8 @@ class PVSS():
         pitidle = {}
         for i in range(1, self.N+1):
             pitidle[i] = _pi[i] - c * Pis[i]
+
+        
         NIZK_proofs = {"Cp": Cp, "c": c, "stidle": stidle, "wtidle": wtidle, "pitidle": pitidle}
         return {'C': C, 'proof_sw': NIZK_proofs}
 
@@ -94,19 +98,27 @@ class PVSS():
         assert(z == wtidle) 
         return True
 
-    def preRecon(self, C, ski, i):
-        return C["C1"][i]**(1/ski)
+    def preRecon(self, C, i, ski=None):
+        if ski == None:
+            ski = self.sk
 
-    
+        ci= C["C1"][i]**(1/ski)
+        # assert(pair(ci, self.pks[int(i)]) == pair(self.h, C["C1"][i]))
+        return ci
+
+    # def testPreRecon(self, C, i, ci):
+        
     def recon(self, C, cis):
+        # print(cis)
         for i in cis:
-            assert pair(cis[i], self.pks[i]) == pair(self.h, C["C1"][i])
+            assert pair(cis[i], self.pks[int(i)]) == pair(self.h, C["C1"][i])
 
-        mui=self.util.recoverCoefficients(list(cis.keys()))
+        mui=self.util.recoverCoefficients([int(i) for i in list(cis.keys())])
 
         hw = self.group.init(G1, 1)
         for i in cis:
-            hw = hw * (cis[i]** mui[i])
+            # print(type(i),i,mui)
+            hw = hw * (cis[i]** mui[int(i)])
         gs = C["Com"] / hw
         return gs
 
@@ -116,10 +128,13 @@ if __name__ == "__main__":
     N, t = 22, 7
     sks={i: random_scalar() for i in range(0, N+1)}
     
-    pvss = PVSS(groupObj)
+    pvss = PVSS('3')
     [pvss.setPK(i, pvss.h ** sks[i]) for i in range(1, N+1)]
     print("N=%d,t=%d" % (N, t))
-    dist = pvss.share(N,t)
+
+    s = groupObj.random(ZR)
+
+    dist = pvss.share(N,t,s)
     
     # print("dis message size:",len(str(trans)))
     #print(dist["proof_sw"])
@@ -137,7 +152,7 @@ if __name__ == "__main__":
 
     cis={}
     for i in T:
-        cis[i] = pvss.preRecon(dist["C"], sks[i],i)
+        cis[i] = pvss.preRecon(dist["C"],i, sks[i])
     
     testgstidle = pvss.recon(dist["C"], cis)
-    print(testgstidle)
+    assert(json.loads(config['g'])**s == testgstidle)
