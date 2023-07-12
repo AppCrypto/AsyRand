@@ -103,22 +103,27 @@ class PVSS():
             ski = self.sk
 
         ci= C["C1"][i]**(1/ski)
-        # assert(pair(ci, self.pks[int(i)]) == pair(self.h, C["C1"][i]))
+        assert(pair(ci, self.pks[int(i)]) == pair(self.h, C["C1"][i]))
         return ci
 
     # def testPreRecon(self, C, i, ci):
         
     def recon(self, C, cis):
         # print(cis)
+        mycis= {}
         for i in cis:
-            assert pair(cis[i], self.pks[int(i)]) == pair(self.h, C["C1"][i])
+            # assert pair(cis[i], self.pks[int(i)]) == pair(self.h, C["C1"][i])
+            if pair(cis[i], self.pks[int(i)]) == pair(self.h, C["C1"][i]):
+                mycis[i] = cis[i]
+            else:
+                print("=========================================================",i, cis[i])
 
-        mui=self.util.recoverCoefficients([int(i) for i in list(cis.keys())])
+        mui=self.util.recoverCoefficients([int(i) for i in list(mycis.keys())])
 
         hw = self.group.init(G1, 1)
-        for i in cis:
+        for i in mycis:
             # print(type(i),i,mui)
-            hw = hw * (cis[i]** mui[int(i)])
+            hw = hw * (mycis[i]** mui[int(i)])
         gs = C["Com"] / hw
         return gs
 

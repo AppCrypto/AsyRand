@@ -3,6 +3,7 @@ import time,sys
 import threading
 import random
 import hashlib
+# import queue
 
 from nodeConnection import NodeConnection
 # sys.path.append("P2PNetWork")
@@ -16,6 +17,37 @@ Python package p2pnet for implementing decentralized peer-to-peer network applic
 
 TODO: Also create events when things go wrong, like a connection with a node has failed.
 """
+
+from config import config
+
+class Queue:
+    def __init__(self, l):
+        self.items = []
+        self.FULL = l
+
+    def empty(self):
+        return self.items == []
+
+    def full(self):
+        return len(self.items) == self.FULL
+
+    def put(self, item):
+        self.items.insert(0,item)
+
+    def get(self):
+        return self.items.pop()
+
+    def size(self):
+        return len(self.items)
+    
+    def all(self):
+        return self.items
+
+    def setQueue(self, lq):
+        self.items = lq
+
+n=len(config["nodes"])
+f=int((len(config["nodes"]) -1)/3)
 
 class Node(threading.Thread):
     """Implements a node that is able to connect to other nodes and is able to accept connections from other nodes.
@@ -91,6 +123,21 @@ class Node(threading.Thread):
         self.pvss = PVSS(self.id)
         self.msgs={}
         self.seq = 0
+        self.L = config['L']
+        self.newL = self.L
+
+        self.epoch=1
+        self.curSeq = {i:1 for i in range(1, n+1)}
+        self.LQ = Queue(f)
+        # [self.LQ.put(i) for i in range(1,f+1)]
+        self.CL = {}
+        for i in range(1, n+1):
+            if i!=self.L:
+                self.CL[i]= True
+        
+        self.Re_1=config['Re_1']
+        # self.CTL=self.msgs
+        self.cis={"recon":{},"reconEcho":{},"reconReady":{}}
         
 
     @property
@@ -364,6 +411,7 @@ class Node(threading.Thread):
     def node_message(self, node, data):
         """This method is invoked when a node send us a message."""
         self.debug_print("node_message: " + node.id + ": " + str(data))
+        # print("node_message: " + node.id + ": " + str(data))
         if self.callback is not None:
             self.callback("node_message", self, node, data)
 
