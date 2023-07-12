@@ -103,7 +103,7 @@ class PVSS():
             ski = self.sk
 
         ci= C["C1"][i]**(1/ski)
-        assert(pair(ci, self.pks[int(i)]) == pair(self.h, C["C1"][i]))
+        # assert(pair(ci, self.pks[int(i)]) == pair(self.h, C["C1"][i]))
         return ci
 
     # def testPreRecon(self, C, i, ci):

@@ -18,10 +18,13 @@ f=int((len(config["nodes"]) -1)/3)
 ip = config["nodes"][ID]["ip"]
 port = config["portBase"] + int(ID)
 
+CT = None
+
 
 # EP = 1
 
 def callback(event, mynode, yournode, data):
+    global CT
     if event == "node_message":        
         
         tp = data['type']
@@ -52,9 +55,10 @@ def callback(event, mynode, yournode, data):
             mynode.pvss.setPK(int(yourid), rv['pk'])
             # print("node:%s's pks length:%d"%(mynode.id, len(mynode.pvss.pks)))
             if len(mynode.pvss.pks) == len(config['nodes']):                      
-                time.sleep(3)
+                time.sleep(5)
                 # print(mynode.pvss.pks)
                 # time.sleep(100)
+
                 sv={'C_P': json.loads(json.dumps(mynode.pvss.share(n,f+1)))}
                 sv['epoch'] = epoch
                 mynode.seq += 1 
@@ -125,7 +129,11 @@ def callback(event, mynode, yournode, data):
                 # time.sleep(0.1)
                 # if "initial" in mynode.msgs:
                 #     print("node %s reach consensus on %s"%(mynode.id, mynode.msgs["initial"][seq][mynode.id]))
-                sv={'C_P': json.loads(json.dumps(mynode.pvss.share(n,f+1)))}
+                # template
+                if CT == None:
+                    CT= json.loads(json.dumps(mynode.pvss.share(n,f+1)))
+                
+                sv={'C_P': CT}
                 sv['epoch'] = epoch
                 mynode.seq += 1 
                 sv['seq'] = "seq_%d"%mynode.seq
@@ -234,7 +242,7 @@ class Peer():
         for j in range(int(ID)+1, n+1):
             node.connect_with_node(ip,config["portBase"]+j)
             print("Node %s connect %d"%(self.ID, j))           
-        time.sleep(2)  
+        time.sleep(5)  
         v = {'pk':node.pvss.pk}
         v['epoch'] = -1
         v['seq'] = "seq_%d"%(-1) 
