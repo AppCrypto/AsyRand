@@ -230,7 +230,7 @@ def callback(event, mynode, yournode, data):
                 mynode.newL = newL
                 # print("new leader", mynode.newL, mynode.LQ.all(), mynode.CL)
             
-class Peer():    
+class Peer(threading.Thread):    
     def __init__(self, ID):
         self.ID= ID
         self.config = config
@@ -238,7 +238,7 @@ class Peer():
         node = Node(ip, port, ID, callback)
         node.start()
 
-        time.sleep(2)
+        time.sleep(3)
         for j in range(int(ID)+1, n+1):
             node.connect_with_node(ip,config["portBase"]+j)
             print("Node %s connect %d"%(self.ID, j))           
@@ -254,9 +254,12 @@ class Peer():
         
         print(node.id, "choose leader",node.newL)
         sentDict={}
-        starttime = time.time()
         
+        starttime = time.time()
         while True:
+            if node.epoch==1:
+                starttime = time.time()
+
         #     # if "initial" in node.msgs and node.curSeq[node.L] in node.msgs["initial"]:
         #     #     print(len(node.msgs["initial"][node.curSeq[node.L]]))
             time.sleep(0.1)            
@@ -299,4 +302,6 @@ class Peer():
 
 if __name__ == '__main__':    
     peer = Peer(ID)
+    peer.start()
+    peer.join()
     
