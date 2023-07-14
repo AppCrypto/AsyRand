@@ -85,15 +85,17 @@ class PVSS():
     def verify(self, Com, proofs):        
         assert(proofs["Cp"]["_Com"] == ((self.g ** proofs["stidle"]) * (self.h ** proofs["wtidle"])) * (Com["Com"] ** proofs["c"]))
             
-        for i in range(1, self.N+1):
-            assert(proofs["Cp"]["_C1"][i] == (self.pks[i] ** proofs["pitidle"][i]) * (Com["C1"][i] ** proofs["c"]))
+        for i in proofs["Cp"]["_C1"]:
+            # print(i, type(i))
+            assert(proofs["Cp"]["_C1"][i] == (self.pks[int(i)] ** proofs["pitidle"][i]) * (Com["C1"][i] ** proofs["c"]))
             
         wtidle = proofs['wtidle']        
         indexArr = [i for i in range(1, self.N+1)]
         y = self.util.recoverCoefficients(indexArr)
+        
         z = 0
-        for i in indexArr:
-            z += proofs["pitidle"][i]*y[i]
+        for i in proofs["pitidle"]:
+            z += proofs["pitidle"][i]*y[int(i)]
     
         assert(z == wtidle) 
         return True

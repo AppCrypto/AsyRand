@@ -4,7 +4,7 @@ import threading
 import random
 import hashlib
 # import queue
-
+# import multiprocessing
 from nodeConnection import NodeConnection
 # sys.path.append("P2PNetWork")
 from pvss import PVSS
@@ -64,7 +64,7 @@ class Node(threading.Thread):
                  connected_node: Which connected node caused the event.
                  data: The data that is send by the connected node."""
 
-    def __init__(self, host, port, id=None, callback=None, max_connections=100):
+    def __init__(self, host, port, id=None, callback=None, max_connections=1000):
         """Create instance of a Node. If you want to implement the Node functionality with a callback, you should 
            provide a callback method. It is preferred to implement a new node by extending this Node class. 
             host: The host name or ip address that is used to bind the TCP/IP server to.
@@ -78,7 +78,7 @@ class Node(threading.Thread):
         self.terminate_flag = threading.Event()
 
         # Server details, host (or ip) to bind to and the port
-        self.host = host
+        self.host = "0.0.0.0"
         self.port = port
 
         # Events are send back to the given callback
@@ -120,14 +120,15 @@ class Node(threading.Thread):
         self.debug = False
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
+        self.canSendEcho={}
         self.pvss = PVSS(self.id)
-        self.msgs={}
-        self.seq = 0
+        self.msgs={}#producer
+        self.seq = 0#producer
         self.L = config['L']
         self.newL = self.L
 
         self.epoch=1
-        self.curSeq = {i:1 for i in range(1, n+1)}
+        self.curSeq = {i:2 for i in range(1, n+1)}#consumer
         self.LQ = Queue(f)
         # [self.LQ.put(i) for i in range(1,f+1)]
         self.CL = {}
@@ -136,8 +137,7 @@ class Node(threading.Thread):
                 self.CL[i]= True
         
         self.Re_1=config['Re_1']
-        # self.CTL=self.msgs
-        self.cis={"recon":{},"reconEcho":{},"reconReady":{}}
+        self.cis={"recon":{},"reconEcho":{},"reconReady":{}}#consumer
         
 
     @property
@@ -191,7 +191,7 @@ class Node(threading.Thread):
                 self.send_to_node(n, data, compression)
 
     def send_to_node(self, n, data, compression='none'):
-        """ Send the data to the node n if it exists."""
+        """ Send the data to the node n if it exists."""        
         self.message_count_send = self.message_count_send + 1
         if n in self.nodes_inbound or n in self.nodes_outbound:
             n.send(data, compression=compression)
@@ -250,7 +250,7 @@ class Node(threading.Thread):
 
             # If reconnection to this host is required, it will be added to the list!
             if reconnect:
-                self.debug_print("connect_with_node: Reconnection check is enabled on node " + host + ":" + str(port))
+                self.debug_print(self.id+ " connect_with_node: Reconnection check is enabled on node " + host + ":" + str(port))
                 self.reconnect_to_nodes.append({
                     "host": host, "port": port, "tries": 0
                 })
@@ -258,7 +258,7 @@ class Node(threading.Thread):
             return True
 
         except Exception as e:
-            self.debug_print("TcpServer.connect_with_node: Could not connect with node. (" + str(e) + ")")
+            self.debug_print("TcpServer.connect_with_node %s:%d: Could not connect with node. ("%(host,port) + str(e) + ")")
             return False
 
     def disconnect_with_node(self, node):
