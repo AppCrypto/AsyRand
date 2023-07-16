@@ -180,15 +180,15 @@ def callback(event, mynode, yournode, data):
                     #     break
 
                 # print(mynode.seq, mynode.seq, mynode.curSeq[int(mynode.id)] + C_Plen)
-                if mynode.seq - 2* C_Plen > mynode.curSeq[int(mynode.id)]:
+                if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)]:
                     time.sleep(config["sleep1"]) 
                 else:
                     time.sleep(config["sleep2"]) 
 
-                # if CTs == None:
-                #     CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
-                CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
-                
+                if CTs == None:
+                    CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
+                # CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
+
                 sv={'C_Ps': CTs}                
                 sv['epoch'] = epoch
                 
@@ -266,7 +266,7 @@ def callback(event, mynode, yournode, data):
                      mynode.cis[sentConsumer] = True
                 else:
                     return         
-                time.sleep(0.01)                
+                time.sleep(0.05)                
                 sv = {"beaconV":rv['beaconV']}
                 sv['epoch'] = epoch
                 sv['seq'] = seq            
@@ -307,7 +307,8 @@ def callback(event, mynode, yournode, data):
                 keys = list(mynode.CL.keys())
                 newL = keys[int(beaconV) % len(mynode.CL)]
                 # endtime = time.time()
-                print("%s(%s/%s) in %s consume %s's %s, output value: %s %.2fs/beacon %.2fs %.2fs %.2fs per"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, seq, beaconV%100000,(time.time()-rv['ts'])/epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'] ), threading.current_thread().ident)
+                print("%s(%s/%s) in %s consume %s's %s, output value: %s %.2fs/beacon %.2fs %.2fs %.2fs per"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, seq, beaconV%100000,(time.time()-rv['ts'])/2/epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'] ) )
+                # print("%s(%s/%s) in %s consume %s's %s, output value: %s %.2fs/beacon %.2fs %.2fs %.2fs per"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, seq, beaconV%100000,(time.time()-rv['ts'])/2/epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'] ), len(str(mynode.msgs))/mynode.seq/1024., len(str(mynode.cis))/mynode.epoch/1024.)
                 mynode.Re_1 = beaconV                
                 mynode.epoch=rv['newepoch']
                 mynode.L=L
@@ -345,14 +346,14 @@ class Peer(threading.Thread):
         
         starttime = time.time()
 
-
+        time.sleep(config['sleep1'])
         while True:
             if node.epoch <= 2:
                 starttime = time.time()
 
         #     # if "initial" in node.msgs and node.curSeq[node.L] in node.msgs["initial"]:
         #     #     print(len(node.msgs["initial"][node.curSeq[node.L]]))
-            time.sleep(0.01)            
+            time.sleep(0.2)            
             if(node.newL == node.L):
                 print("node.newL == node.L",node.L)
                 continue
@@ -361,7 +362,7 @@ class Peer(threading.Thread):
                 continue
             
             seq = "seq_%d"%(node.curSeq[node.newL])
-            # sent = "sent_%s_%s"%("ready", seq)
+            sent = "sent_%s_%s"%("ready", seq)
 
             sent2 = "ld_%sseq_%d"%(node.newL,node.curSeq[node.newL])
             if sent2 in sentDict:           
