@@ -36,5 +36,22 @@ ssh -i BeaconTest_Ohio.pem ubuntu@3.139.154.250  "cd beacon && sh kill.sh" &
 ssh -i BeaconTest_Ohio.pem ubuntu@3.143.129.24  "cd beacon && sh kill.sh" &
 ssh -i BeaconTest_Ohio.pem ubuntu@3.20.133.205  "cd beacon && sh kill.sh" &
 
+ssh -i BeaconTest_Mumbai.pem ubuntu@13.200.53.130 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Mumbai.pem ubuntu@13.234.100.134 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Mumbai.pem ubuntu@3.111.202.217 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Mumbai.pem ubuntu@65.2.154.26 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Frankfurt.pem ubuntu@18.156.184.202 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Frankfurt.pem ubuntu@3.77.89.37 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Frankfurt.pem ubuntu@35.156.113.255 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Frankfurt.pem ubuntu@52.28.214.81 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Sydney.pem ubuntu@3.106.173.166 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Sydney.pem ubuntu@52.63.29.90 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Sydney.pem ubuntu@54.252.72.184 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_Sydney.pem ubuntu@54.79.26.185 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_SaoPaulo.pem ubuntu@52.67.111.172 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_SaoPaulo.pem ubuntu@52.67.198.168 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_SaoPaulo.pem ubuntu@54.94.189.238 "cd beacon && sh kill.sh" &
+ssh -i BeaconTest_SaoPaulo.pem ubuntu@54.94.202.91 "cd beacon && sh kill.sh" &
+
 wait
 echo "finished"

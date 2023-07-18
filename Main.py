@@ -3,7 +3,7 @@ import time,json
 import hashlib
 # import pvss
 
-config = json.loads(open("./nodeConfiguration.json","r").read())
+from config import config
 
 
 import requests

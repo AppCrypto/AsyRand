@@ -34,6 +34,23 @@ scp -i  BeaconTest_Ohio.pem -r $1 ubuntu@18.222.52.228:~/beacon/ &
 scp -i  BeaconTest_Ohio.pem -r $1 ubuntu@3.139.154.250:~/beacon/ &
 scp -i  BeaconTest_Ohio.pem -r $1 ubuntu@3.143.129.24:~/beacon/ &
 scp -i  BeaconTest_Ohio.pem -r $1 ubuntu@3.20.133.205:~/beacon/ &
+
+scp -i BeaconTest_Mumbai.pem -r $1 ubuntu@13.200.53.130:~/beacon/ &
+scp -i BeaconTest_Mumbai.pem -r $1 ubuntu@13.234.100.134:~/beacon/ &
+scp -i BeaconTest_Mumbai.pem -r $1 ubuntu@3.111.202.217:~/beacon/ &
+scp -i BeaconTest_Mumbai.pem -r $1 ubuntu@65.2.154.26:~/beacon/ &
+scp -i BeaconTest_Frankfurt.pem -r $1 ubuntu@18.156.184.202:~/beacon/ &
+scp -i BeaconTest_Frankfurt.pem -r $1 ubuntu@3.77.89.37:~/beacon/ &
+scp -i BeaconTest_Frankfurt.pem -r $1 ubuntu@35.156.113.255:~/beacon/ &
+scp -i BeaconTest_Frankfurt.pem -r $1 ubuntu@52.28.214.81:~/beacon/ &
+scp -i BeaconTest_Sydney.pem -r $1 ubuntu@3.106.173.166:~/beacon/ &
+scp -i BeaconTest_Sydney.pem -r $1 ubuntu@52.63.29.90:~/beacon/ &
+scp -i BeaconTest_Sydney.pem -r $1 ubuntu@54.252.72.184:~/beacon/ &
+scp -i BeaconTest_Sydney.pem -r $1 ubuntu@54.79.26.185:~/beacon/ &
+scp -i BeaconTest_SaoPaulo.pem -r $1 ubuntu@52.67.111.172:~/beacon/ &
+scp -i BeaconTest_SaoPaulo.pem -r $1 ubuntu@52.67.198.168:~/beacon/ &
+scp -i BeaconTest_SaoPaulo.pem -r $1 ubuntu@54.94.189.238:~/beacon/ &
+scp -i BeaconTest_SaoPaulo.pem -r $1 ubuntu@54.94.202.91:~/beacon/ &
 wait
 
 echo "finished"

@@ -3,6 +3,7 @@ import time
 import threading
 import json
 import zlib, bz2, lzma, base64
+from config import config
 
 """
 Author : Maurice Snoeren <macsnoeren(at)gmail.com>
@@ -202,7 +203,7 @@ class NodeConnection(threading.Thread):
             chunk = b''
 
             try:
-                chunk = self.sock.recv(4096)
+                chunk = self.sock.recv(config["rcvsize"])
 
             except socket.timeout:
                 self.main_node.debug_print("NodeConnection: timeout")

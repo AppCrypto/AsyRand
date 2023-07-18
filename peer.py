@@ -72,8 +72,8 @@ def callback(event, mynode, yournode, data):
             mynode.pvss.setPK(int(yourid), rv['pk'])
             # print("node:%s's pks length:%d"%(mynode.id, len(mynode.pvss.pks)))
             if len(mynode.pvss.pks) == len(config['nodes']):                      
-                time.sleep(20)
-                print("Node %s producer starts"%(mynode.id))
+                
+                
             
                 # sv={'C_P': json.loads(json.dumps(mynode.pvss.share(n,f+1)))}
                 sv={'C_Ps': [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)]}
@@ -93,6 +93,8 @@ def callback(event, mynode, yournode, data):
                 mynode.seq += C_Plen
                 sv['seq'] = "seq_%d"%(mynode.seq)
                 
+                time.sleep(20)
+                print("Node %s producer starts"%(mynode.id))
                 # print("%s initial ct= %s at %s"%(mynode.id, int(mynode.pvss.hash(sv['C_Ps']))%100000, sv['seq']))
                 # if mynode.id == "1":                
                 mynode.send_to_nodes({"type": "initial", "v": json.dumps(sv)}) 
@@ -182,7 +184,7 @@ def callback(event, mynode, yournode, data):
                 
                 # print(mynode.seq, mynode.seq, mynode.curSeq[int(mynode.id)] + C_Plen)
                 if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)]:
-                    time.sleep(config["sleep1"]) 
+                    time.sleep(config["sleep1"]*(random.random()*0.3+1) )
                 else:
                     time.sleep(config["sleep2"]) 
 
@@ -218,6 +220,7 @@ def callback(event, mynode, yournode, data):
             L = rv['L']
             seq = rv['seq']
             Re_1=rv['Re_1']
+
             
             # if mynode.newL in mynode.curSeq:
             #     print(mynode.id, tp, mynode.newL, mynode.epoch, mynode.curSeq[mynode.newL], len(mynode.cis[tp][mynode.epoch]))
@@ -228,7 +231,7 @@ def callback(event, mynode, yournode, data):
             #     print(mynode.id, tp, mynode.epoch, "mynode.epoch not in mynode.cis[tp]")
 
             # print(mynode.id, tp, epoch, len(mynode.cis[tp][epoch]))
-            if len(mynode.cis[tp][epoch]) > f and str(L) in mynode.msgs["initial"][seq]:
+            if len(mynode.cis[tp][epoch]) > f+5 and str(L) in mynode.msgs["initial"][seq]:
                 if not mynode.cis[sentConsumer]:
                      mynode.cis[sentConsumer] = True
                 else:
@@ -337,7 +340,7 @@ class Peer(threading.Thread):
         for j in range(int(ID)+1, n+1):
             node.connect_with_node(config["nodes"][str(j)]["ip"],config["portBase"]+j)
             print("Node %s connect %d (%s:%d)"%(self.ID, j, config["nodes"][str(j)]["ip"], config["portBase"]+j))           
-        time.sleep(20)  
+        time.sleep(config["sleep1"])
         v = {'pk':node.pvss.pk}
         v['epoch'] = -1
         v['seq'] = "seq_%d"%(-1) 
@@ -352,7 +355,8 @@ class Peer(threading.Thread):
         
         starttime = time.time()
 
-        time.sleep(100)
+        time.sleep(config["sleep1"])
+        print("Node %s consumer starts"%node.id)
         while True:
             if node.epoch <= 2:
                 starttime = time.time()
@@ -375,8 +379,8 @@ class Peer(threading.Thread):
                 # print("%s has sent2 in sentDict"%node.id,getattr(node, "id"), sent2, node.epoch, seq, node.newL)
                 continue
             
-            # if sent in node.msgs and node.msgs[sent] and \
-            if   (seq in node.msgs["initial"] and \
+            # if sent in node.msgs and node.msgs[sent] and \        
+            if "initial" in node.msgs and (seq in node.msgs["initial"] and \
                  str(node.newL) in node.msgs["initial"][seq]):# and \
                  # len(node.msgs["initial"][seq][str(node.newL)])>=1 :
                 sentDict[sent2]=True

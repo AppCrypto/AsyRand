@@ -224,7 +224,7 @@ class Node(threading.Thread):
 
             # Basic information exchange (not secure) of the id's of the nodes!
             sock.send((self.id + ":" + str(self.port)).encode('utf-8')) # Send my id and port to the connected node!
-            connected_node_id = sock.recv(4096).decode('utf-8') # When a node is connected, it sends its id!
+            connected_node_id = sock.recv(config["rcvsize"]).decode('utf-8') # When a node is connected, it sends its id!
 
             # Cannot connect with yourself
             if self.id == connected_node_id:
@@ -323,7 +323,7 @@ class Node(threading.Thread):
                     
                     # Basic information exchange (not secure) of the id's of the nodes!
                     connected_node_port = client_address[1] # backward compatibilty
-                    connected_node_id   = connection.recv(4096).decode('utf-8')
+                    connected_node_id   = connection.recv(config["rcvsize"]).decode('utf-8')
                     if ":" in connected_node_id:
                         # When a node is connected, it sends its id!
                         (connected_node_id, connected_node_port) = connected_node_id.split(':')
