@@ -21,7 +21,6 @@ C_Plen = config["C_Plen"]
 CTs = None
 
 
-# EP = 1
 
 def callback(event, mynode, yournode, data):
     global CTs
@@ -93,7 +92,7 @@ def callback(event, mynode, yournode, data):
                 mynode.seq += C_Plen
                 sv['seq'] = "seq_%d"%(mynode.seq)
                 
-                time.sleep(20)
+                time.sleep(10)
                 print("Node %s producer starts"%(mynode.id))
                 # print("%s initial ct= %s at %s"%(mynode.id, int(mynode.pvss.hash(sv['C_Ps']))%100000, sv['seq']))
                 # if mynode.id == "1":                
@@ -116,8 +115,8 @@ def callback(event, mynode, yournode, data):
             sv['ts'] = rv['ts']
             sv['ts1'] = time.time()
             seqLatest = int(seq.split("_")[1])
-            time.sleep(0.2)
-            
+            # time.sleep(0.2)
+            time.sleep(mynode.sendingCnt * random.random() / 40.)
 
             for i in range(0, C_Plen):
                 seqi = seqLatest - C_Plen + i 
@@ -149,6 +148,7 @@ def callback(event, mynode, yournode, data):
                     return                
                 sv['ts2'] = time.time() 
                 time.sleep(0.2)               
+                # time.sleep(mynode.sendingCnt  * random.random() / 40.)
                 seqLatest = int(seq.split("_")[1])
                 for i in range(0, C_Plen):
                     seqistr = 'seq_%d'%(seqLatest - C_Plen + i )
@@ -180,14 +180,7 @@ def callback(event, mynode, yournode, data):
                 
                 # if mynode.epoch % 10 == 0:
                 ts = time.time()
-                print("%s consensus=============== at %s, initial time: %.2f, echo time: %.2f, ready time: %.2f"%(mynode.id, rv['seq'], ts-rv['ts'],  ts-rv['ts1'],  ts-rv['ts2']) )
                 
-                # print(mynode.seq, mynode.seq, mynode.curSeq[int(mynode.id)] + C_Plen)
-                if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)]:
-                    time.sleep(config["sleep1"]*(random.random()*0.3+1) )
-                else:
-                    time.sleep(config["sleep2"]) 
-
                 if CTs == None:
                     CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
                 # CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
@@ -206,7 +199,15 @@ def callback(event, mynode, yournode, data):
                 mynode.seq += C_Plen
                 sv['seq'] = "seq_%d"%(mynode.seq)
 
+                print("%s sendingCnt:%d consensus at %s, initial time: %.2f, echo time: %.2f, ready time: %.2f"%( mynode.id,mynode.sendingCnt, rv['seq'], ts-rv['ts'],  ts-rv['ts1'],  ts-rv['ts2']) )
                 
+                # print(mynode.seq, mynode.seq, mynode.curSeq[int(mynode.id)] + C_Plen)
+                if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)]:
+                    time.sleep(config["sleep1"] + mynode.sendingCnt / 5)
+                else:
+                    time.sleep(config["sleep2"]+ mynode.sendingCnt / 40) 
+
+
                 # if mynode.id == "1":
                 mynode.send_to_nodes({"type": "initial", "v": json.dumps(sv)})  
 
@@ -231,12 +232,12 @@ def callback(event, mynode, yournode, data):
             #     print(mynode.id, tp, mynode.epoch, "mynode.epoch not in mynode.cis[tp]")
 
             # print(mynode.id, tp, epoch, len(mynode.cis[tp][epoch]))
-            if len(mynode.cis[tp][epoch]) > f+5 and str(L) in mynode.msgs["initial"][seq]:
+            if len(mynode.cis[tp][epoch]) > f and str(L) in mynode.msgs["initial"][seq]:
                 if not mynode.cis[sentConsumer]:
                      mynode.cis[sentConsumer] = True
                 else:
                     return
-                time.sleep(0.01) 
+                time.sleep(0.5) 
                 C=mynode.msgs["initial"][seq][str(L)]['C']
                 starttime = time.time()
                 cis=mynode.cis[tp][epoch].copy()
@@ -270,7 +271,7 @@ def callback(event, mynode, yournode, data):
                      mynode.cis[sentConsumer] = True
                 else:
                     return         
-                time.sleep(0.05)                
+                time.sleep(0.5)                
                 sv = {"beaconV":rv['beaconV']}
                 sv['epoch'] = epoch
                 sv['seq'] = seq            
@@ -297,7 +298,7 @@ def callback(event, mynode, yournode, data):
                      mynode.cis[sentConsumer] = True
                 else:
                     return
-                time.sleep(0.01) 
+                time.sleep(0.05) 
                 beaconV = rv['beaconV']
                 L = rv['L']                
                 Re_1 = rv['Re_1']
@@ -335,12 +336,12 @@ class Peer(threading.Thread):
         node = self.node
         self.node.start()
 
-        time.sleep(20)
+        time.sleep(10)
 
         for j in range(int(ID)+1, n+1):
             node.connect_with_node(config["nodes"][str(j)]["ip"],config["portBase"]+j)
             print("Node %s connect %d (%s:%d)"%(self.ID, j, config["nodes"][str(j)]["ip"], config["portBase"]+j))           
-        time.sleep(config["sleep1"])
+        time.sleep(int(ID)/3+10)
         v = {'pk':node.pvss.pk}
         v['epoch'] = -1
         v['seq'] = "seq_%d"%(-1) 
@@ -355,7 +356,7 @@ class Peer(threading.Thread):
         
         starttime = time.time()
 
-        time.sleep(config["sleep1"])
+        time.sleep(60)
         print("Node %s consumer starts"%node.id)
         while True:
             if node.epoch <= 2:

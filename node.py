@@ -139,6 +139,7 @@ class Node(threading.Thread):
         self.Re_1=config['Re_1']
         self.cis={"recon":{},"reconEcho":{},"reconReady":{}}#consumer
         
+        self.sendingCnt = 0
 
     @property
 
@@ -177,18 +178,30 @@ class Node(threading.Thread):
             converted to JSON that is send over to the other node. exclude list gives all the nodes to which this
             data should not be sent.
             TODO: When sending was not successfull, the user is not notified."""
+        
         self.message_count_send = self.message_count_send + 1
-        for n in self.nodes_inbound:
+        self.sendingCnt += len(self.nodes_inbound)
+        self.sendingCnt += len(self.nodes_outbound)
+        print("node:%s type:%s sendingCnt:%d datalen:%d"%(self.id, data["type"], self.sendingCnt, len(str(data))))
+        if data["type"] in ["echo"]:
+            time.sleep(self.sendingCnt / 1000.)
+        else:
+            time.sleep(self.sendingCnt / 2000.)
+        nodes_inbound = self.nodes_inbound.copy()
+        for n in nodes_inbound:
             if n in exclude:
                 self.debug_print("Node send_to_nodes: Excluding node in sending the message")
             else:
                 self.send_to_node(n, data, compression)
+                self.sendingCnt -=1
 
-        for n in self.nodes_outbound:
+        nodes_outbound = self.nodes_outbound.copy()
+        for n in nodes_outbound:
             if n in exclude:
                 self.debug_print("Node send_to_nodes: Excluding node in sending the message")
             else:
                 self.send_to_node(n, data, compression)
+                self.sendingCnt -=1
 
     def send_to_node(self, n, data, compression='none'):
         """ Send the data to the node n if it exists."""        
