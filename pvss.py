@@ -82,13 +82,15 @@ class PVSS():
         return {'C': C, 'proof_sw': NIZK_proofs}
 
 
-    def verify(self, Com, proofs):        
-        assert(proofs["Cp"]["_Com"] == ((self.g ** proofs["stidle"]) * (self.h ** proofs["wtidle"])) * (Com["Com"] ** proofs["c"]))
-            
-        for i in proofs["Cp"]["_C1"]:
-            # print(i, type(i))
-            assert(proofs["Cp"]["_C1"][i] == (self.pks[int(i)] ** proofs["pitidle"][i]) * (Com["C1"][i] ** proofs["c"]))
-            
+    def verify(self, C, proofs):        
+        assert(proofs["Cp"]["_Com"] == ((self.g ** proofs["stidle"]) * (self.h ** proofs["wtidle"])) * (C["Com"] ** proofs["c"]))
+        
+        try:
+            for i in proofs["Cp"]["_C1"]:        
+                assert(proofs["Cp"]["_C1"][i] == (self.pks[int(i)] ** proofs["pitidle"][i]) * (C["C1"][i] ** proofs["c"]))
+        except Exception as e:
+            print("self.ID", e)
+            open("error.txt", "a").write("self.ID " + json.dumps({"C":C, "proofs":proofs}))
         wtidle = proofs['wtidle']        
         indexArr = [i for i in range(1, self.N+1)]
         y = self.util.recoverCoefficients(indexArr)
@@ -132,22 +134,38 @@ class PVSS():
 
 
 if __name__ == "__main__":
-    N, t = 22, 7
+    
+    # N = int(sys.argv[1])
+    N = len(config['nodes'])
+    t=int((N -1)/3+1)
     sks={i: random_scalar() for i in range(0, N+1)}
     
+
     pvss = PVSS('3')
+    starttime = time.time()
+    g1 = pvss.h ** random_scalar()
+    print("exponetiation cost %.3f"%(time.time()- starttime))
+    
+    g2 = pvss.h ** random_scalar()
+    starttime = time.time()
+    pair(g1,g2)
+    print("pairing cost %.3f"%(time.time()- starttime))
+    
     [pvss.setPK(i, pvss.h ** sks[i]) for i in range(1, N+1)]
     print("N=%d,t=%d" % (N, t))
 
     s = groupObj.random(ZR)
-
+    starttime = time.time()
     dist = pvss.share(N,t,s)
-    
+    print("pvss.share with %d nodes, cost %.3fs, size: %.2fkB"%(N, time.time()- starttime, len(str(dist))/1024.))
     # print("dis message size:",len(str(trans)))
     #print(dist["proof_sw"])
     ver_C = dist["C"]
     ver_proof = dist["proof_sw"]
-    ver_result = pvss.verify(ver_C, ver_proof)
+    starttime = time.time()    
+    ver_result = pvss.verify(ver_C, ver_proof)    
+    print("pvss.verify with %d nodes, cost %.2fs"%(N, time.time()- starttime))
+    
     if not ver_result:
         print("the verify is false")
         exit(0)
@@ -160,6 +178,9 @@ if __name__ == "__main__":
     cis={}
     for i in T:
         cis[i] = pvss.preRecon(dist["C"],i, sks[i])
+        # print(len(str(cis[i])))
+    starttime = time.time()    
+    testgstidle = pvss.recon(dist["C"], cis)    
+    print("pvss.share with %d nodes, cost %.2fs, size: %.2fkB"%(N, time.time()- starttime, len(str(cis))/1024.))
     
-    testgstidle = pvss.recon(dist["C"], cis)
     assert(json.loads(config['g'])**s == testgstidle)
