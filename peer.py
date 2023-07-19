@@ -48,11 +48,12 @@ def callback(event, mynode, yournode, data):
             if sentProducer not in mynode.msgs:
                 mynode.msgs[sentProducer] = False
 
-            seqLatest = int(seq.split("_")[1])        
+            seqStart = int(seq.split("seq_")[1])        
 
         if tp in ["pks", "initial","echo", "ready"]:
+            leaderID = seq.split("ld_")[1].split("seq_")[0]
             for i in range(0, C_Plen):
-                seqistr = 'seq_%d'%(seqLatest - C_Plen + i )      
+                seqistr = 'ld_%sseq_%d'%(leaderID, seqStart + i )      
                 if seqistr not in mynode.msgs[tp]:
                     mynode.msgs[tp][seqistr]={}
 
@@ -71,42 +72,43 @@ def callback(event, mynode, yournode, data):
             mynode.pvss.setPK(int(yourid), rv['pk'])
             # print("node:%s's pks length:%d"%(mynode.id, len(mynode.pvss.pks)))
             if len(mynode.pvss.pks) == len(config['nodes']):                      
-                
-                
+                time.sleep(10)
+                print("Node %s producer starts"%(mynode.id))    
             
                 # sv={'C_P': json.loads(json.dumps(mynode.pvss.share(n,f+1)))}
                 sv={'C_Ps': [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)]}
                 sv['epoch'] = epoch
                 sv['ts'] = time.time()
-                sv['ts1'] = time.time()                            
+                sv['ts1'] = time.time()                     
+                sv['seq'] = "ld_%sseq_%d"%(mynode.id,mynode.seq)       
                 # mynode.msgs[sentProducer] = True
-                                         
+                hC_Ps = mynode.pvss.hash(sv['C_Ps'])                                
                 for i in range(0, C_Plen):
                     seqi = mynode.seq+i                    
-                    seqistr = 'seq_%d'%seqi                    
+                    seqistr = 'ld_%sseq_%d'%(mynode.id,seqi)
                     if seqistr not in mynode.msgs["initial"]:
                         mynode.msgs["initial"][seqistr]={}
                     if mynode.id not in mynode.msgs["initial"][seqistr]:
                         mynode.msgs["initial"][seqistr][mynode.id]=sv['C_Ps'][i]
+                    if seqistr not in mynode.msgs["echo"]:
+                        mynode.msgs["echo"][seqistr]={}
+                    if mynode.id not in mynode.msgs["echo"][seqistr]:
+                        mynode.msgs["echo"][seqistr][mynode.id]=hC_Ps
 
                 mynode.seq += C_Plen
-                sv['seq'] = "seq_%d"%(mynode.seq)
-                
-                time.sleep(10)
-                print("Node %s producer starts"%(mynode.id))
-                # print("%s initial ct= %s at %s"%(mynode.id, int(mynode.pvss.hash(sv['C_Ps']))%100000, sv['seq']))
-                # if mynode.id == "1":                
+                         
                 mynode.send_to_nodes({"type": "initial", "v": json.dumps(sv)}) 
 
-                sv['hC_Ps'] = mynode.pvss.hash(sv['C_Ps'])
+                sv['hC_Ps'] = hC_Ps
                 del sv['C_Ps']
                 mynode.send_to_nodes({"type": "echo", "v": json.dumps(sv)})                     
         elif tp == "initial":
-            seqLatest = int(seq.split("_")[1])
+            
+            seqStart = int(seq.split("seq_")[1])
             seqistr=seq
             for i in range(0, C_Plen):
-                seqi = seqLatest - C_Plen + i 
-                seqistr = 'seq_%d'%seqi      
+                seqi = seqStart + i 
+                seqistr = 'ld_%sseq_%d'%(leaderID, seqi)
                 mynode.msgs[tp][seqistr][yourid] = rv['C_Ps'][i]
                 mynode.pvss.verify(rv['C_Ps'][i]["C"], rv['C_Ps'][i]["proof_sw"])
             sv = {"hC_Ps":mynode.pvss.hash(rv['C_Ps'])}            
@@ -114,13 +116,13 @@ def callback(event, mynode, yournode, data):
             sv['seq'] = seq   
             sv['ts'] = rv['ts']
             sv['ts1'] = time.time()
-            seqLatest = int(seq.split("_")[1])
+            seqStart = int(seq.split("seq_")[1])
             # time.sleep(0.2)
-            time.sleep(mynode.sendingCnt / 80.)
+            time.sleep(mynode.sendingCnt / 500.)
 
             for i in range(0, C_Plen):
-                seqi = seqLatest - C_Plen + i 
-                seqistr = 'seq_%d'%seqi                    
+                seqi = seqStart + i 
+                seqistr = 'ld_%sseq_%d'%(leaderID,seqi)
                 if seqistr not in mynode.msgs["echo"]:
                     mynode.msgs["echo"][seqistr]={}
                 if mynode.id not in mynode.msgs["echo"][seqistr]:
@@ -129,10 +131,11 @@ def callback(event, mynode, yournode, data):
             # print("%s echo ct= %s at %s"%(mynode.id, sv['hC_Ps'], sv['seq']), len(mynode.msgs["echo"][seqistr]))
             mynode.send_to_nodes({"type": "echo", "v": json.dumps(sv)})  
         elif tp == "echo":
-            seqLatest = int(seq.split("_")[1])
+            
+            seqStart = int(seq.split("seq_")[1])
             seqistr=seq
             for i in range(0, C_Plen):
-                seqistr = 'seq_%d'%(seqLatest - C_Plen + i )
+                seqistr = 'ld_%sseq_%d'%(leaderID, seqStart + i )
                 mynode.msgs[tp][seqistr][yourid] = rv['hC_Ps']
             sv = {"hC_Ps":rv['hC_Ps']}
             sv['epoch'] = epoch
@@ -147,11 +150,13 @@ def callback(event, mynode, yournode, data):
                 else:
                     return                
                 sv['ts2'] = time.time() 
-                time.sleep(0.2)               
-                # time.sleep(mynode.sendingCnt  * random.random() / 40.)
-                seqLatest = int(seq.split("_")[1])
+                # time.sleep(0.2)  
+                time.sleep(mynode.sendingCnt / 500)         
+                
+                
+                seqStart = int(seq.split("seq_")[1])
                 for i in range(0, C_Plen):
-                    seqistr = 'seq_%d'%(seqLatest - C_Plen + i )
+                    seqistr = 'ld_%sseq_%d'%(leaderID,seqStart  + i )
                     if seqistr not in mynode.msgs["ready"]:
                         mynode.msgs["ready"][seqistr]={}
                     if mynode.id not in mynode.msgs["ready"][seqistr]:
@@ -160,60 +165,66 @@ def callback(event, mynode, yournode, data):
                 mynode.send_to_nodes({"type": "ready", "v": json.dumps(sv)}) 
 
         elif tp == "ready":
+            
             # mynode.msgs[tp][seq][yourid] = rv['hC_Ps']
-            seqLatest = int(seq.split("_")[1])
+            seqStart = int(seq.split("seq_")[1])
             seqistr=seq
             for i in range(0, C_Plen):
-                seqistr = 'seq_%d'%(seqLatest - C_Plen + i )
+                seqistr = 'ld_%sseq_%d'%(leaderID, seqStart + i )
                 mynode.msgs[tp][seqistr][yourid] = rv['hC_Ps']
 
             if len(mynode.msgs["ready"][seqistr]) > 2*f:
-                # time.sleep(0.1 * random.random())
+                
                 if not mynode.msgs[sentProducer]:
                      mynode.msgs[sentProducer] = True
                      for i in range(0, C_Plen):
-                        seqistr = 'seq_%d'%(seqLatest - C_Plen + i )
+                        seqistr = 'ld_%sseq_%d'%(leaderID, seqStart + i )
                         sentProducer = 'sent_%s_%s'%(tp, seqistr)
                         mynode.msgs[sentProducer] = True
                 else:
                     return
-                
-                # if mynode.epoch % 10 == 0:
+
                 ts = time.time()
-                
-                if CTs == None:
-                    CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
-                # CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
+                print("%s (%s/%s) consensus on %s, initial time: %.2f, echo time: %.2f, ready time: %.2f sendingCnt:%s"%\
+                    ( mynode.id, mynode.curSeq[int(mynode.id)], mynode.seq, seq, ts-rv['ts'],  ts-rv['ts1'],  ts-rv['ts2'] ,mynode.sendingCnt) )
+                # time.sleep(100)
+                # print(seq, seqistr, mynode.msgs[tp][seqistr])
+                if seq.startswith("ld_%sseq_"%(mynode.id)):
+                    
+                                    
+                    if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)]:
+                        time.sleep(config["sleep1"]*(mynode.seq-mynode.curSeq[int(mynode.id)]-2) + mynode.sendingCnt/ 10)
+                    else:
+                        time.sleep(config["sleep2"] + mynode.sendingCnt / 100)
 
-                sv={'C_Ps': CTs}                
-                sv['epoch'] = epoch
-                sv['ts'] = time.time()
-                sv['ts1'] = time.time()
-                for i in range(0, C_Plen):
-                    seqi = mynode.seq+i                    
-                    seqistr = 'seq_%d'%seqi      
-                    if seqistr not in mynode.msgs["initial"]:
-                        mynode.msgs["initial"][seqistr]={}
-                    if mynode.id not in mynode.msgs["initial"][seqistr]:
-                        mynode.msgs["initial"][seqistr][mynode.id]=sv['C_Ps'][i]
-                mynode.seq += C_Plen
-                sv['seq'] = "seq_%d"%(mynode.seq)
+                    if CTs == None:
+                        CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
+                    # CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
 
-                print("%s sendingCnt:%d consensus at %s, initial time: %.2f, echo time: %.2f, ready time: %.2f"%( mynode.id,mynode.sendingCnt, rv['seq'], ts-rv['ts'],  ts-rv['ts1'],  ts-rv['ts2']) )
-                
-                # print(mynode.seq, mynode.seq, mynode.curSeq[int(mynode.id)] + C_Plen)
-                if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)]:
-                    time.sleep(config["sleep1"]*(mynode.seq-mynode.curSeq[int(mynode.id)]-2) + mynode.sendingCnt / 5)
-                else:
-                    time.sleep(config["sleep2"]+ mynode.sendingCnt / 40) 
+                    sv={'C_Ps': CTs}        
+                    sv['seq'] = "ld_%sseq_%d"%(mynode.id, mynode.seq)        
+                    sv['epoch'] = epoch
+                    sv['ts'] = time.time()
+                    sv['ts1'] = time.time()
+                    hC_Ps = mynode.pvss.hash(sv['C_Ps'])
+                    for i in range(0, C_Plen):
+                        seqi = mynode.seq +i                    
+                        seqistr = 'ld_%sseq_%d'%(leaderID, seqi)
+                        if seqistr not in mynode.msgs["initial"]:
+                            mynode.msgs["initial"][seqistr]={}
+                        if mynode.id not in mynode.msgs["initial"][seqistr]:
+                            mynode.msgs["initial"][seqistr][mynode.id]=sv['C_Ps'][i]
+                        if seqistr not in mynode.msgs["echo"]:
+                            mynode.msgs["echo"][seqistr]={}
+                        if mynode.id not in mynode.msgs["echo"][seqistr]:
+                            mynode.msgs["echo"][seqistr][mynode.id]=hC_Ps
+                        
+                    mynode.seq += C_Plen
+                    mynode.send_to_nodes({"type": "initial", "v": json.dumps(sv)})  
 
-
-                # if mynode.id == "1":
-                mynode.send_to_nodes({"type": "initial", "v": json.dumps(sv)})  
-
-                sv['hC_Ps'] = mynode.pvss.hash(sv['C_Ps'])
-                del sv['C_Ps']
-                mynode.send_to_nodes({"type": "echo", "v": json.dumps(sv)})                     
+                    sv['hC_Ps'] = hC_Ps
+                    del sv['C_Ps']
+                    mynode.send_to_nodes({"type": "echo", "v": json.dumps(sv)})                     
         elif tp == "recon":
             if epoch not in mynode.cis[tp]:
                 mynode.cis[tp][epoch] = {}                
@@ -224,7 +235,10 @@ def callback(event, mynode, yournode, data):
 
             
             # print(mynode.id, tp, epoch, len(mynode.cis[tp][epoch]))
-            if len(mynode.cis[tp][epoch]) > f and str(L) in mynode.msgs["initial"][seq]:
+            if len(mynode.cis[tp][epoch]) > f:
+                if str(L) not in mynode.msgs["initial"][seq]:
+                    print("node %s str(L) not in mynode.msgs['initial'][seq]"%(mynode.id))
+                    return
                 if not mynode.cis[sentConsumer]:
                      mynode.cis[sentConsumer] = True
                 else:
@@ -297,7 +311,6 @@ def callback(event, mynode, yournode, data):
                 # print("node %s send reconReady ct: %s"%(mynode.id, sv))
                 mynode.send_to_nodes({"type": "reconReady", "v": json.dumps(sv)})
         elif tp == "reconReady":
-
             mynode.cis[tp][epoch][yourid] = {"beaconV":rv['beaconV'],"LQ":rv['LQ'],'L':rv['L'], 'Re_1':rv['Re_1'],'newepoch':rv['newepoch']}
             if len(mynode.cis[tp][epoch]) > 2*f: 
 
@@ -322,31 +335,30 @@ def callback(event, mynode, yournode, data):
                     print("node%s reconReady-------------------------------------------------------mynode.epoch >= rv['newepoch']"%(mynode.id))
                     return
                 time.sleep(0.05) 
-                with threading.Lock():
-                    beaconV = rv['beaconV']
-                    L = rv['L']                
-                    Re_1 = rv['Re_1']
-                    mynode.curSeq[L]+=1                    
-                    mynode.LQ.setQueue(list(rv['LQ']));      
-                    if mynode.LQ.full():
-                        oldestL = mynode.LQ.get()     
-                    mynode.LQ.put(L)                         
-                    mynode.CL={i:True for i in range(1, n+1)}
-                    for j in mynode.LQ.all():
-                        if j in mynode.CL:
-                            del mynode.CL[j]
-                    keys = list(mynode.CL.keys())
-                    newL = keys[int(beaconV) % len(mynode.CL)]
-                    # endtime = time.time()
-                    
-                    if mynode.epoch == 10:
-                        print("%s(%s/%s) epoch:%s Node%s's %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, seq, beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.LQ.all() ), len(str(mynode.msgs))/mynode.seq/1024., len(str(mynode.cis))/mynode.epoch/1024.)
-                    else:
-                        print("%s(%s/%s) epoch:%s Node%s's %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, seq, beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.LQ.all()))
-                    mynode.Re_1 = beaconV                
-                    mynode.epoch=rv['newepoch']
-                    mynode.L=L
-                    mynode.newL = newL
+                beaconV = rv['beaconV']
+                L = rv['L']                
+                Re_1 = rv['Re_1']
+                mynode.curSeq[L]+=1                    
+                mynode.LQ.setQueue(list(rv['LQ']));      
+                if mynode.LQ.full():
+                    oldestL = mynode.LQ.get()     
+                mynode.LQ.put(L)                         
+                mynode.CL={i:True for i in range(1, n+1)}
+                for j in mynode.LQ.all():
+                    if j in mynode.CL:
+                        del mynode.CL[j]
+                keys = list(mynode.CL.keys())
+                newL = keys[int(beaconV) % len(mynode.CL)]
+                # endtime = time.time()
+                
+                if mynode.epoch == 10:
+                    print("%s(%s/%s) epoch:%s Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt, mynode.LQ.all() ), len(str(mynode.msgs))/mynode.seq/1024., len(str(mynode.cis))/mynode.epoch/1024.)
+                else:
+                    print("%s(%s/%s) epoch:%s Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt, mynode.LQ.all()))
+                mynode.Re_1 = beaconV                
+                mynode.epoch=rv['newepoch']
+                mynode.L=L
+                mynode.newL = newL
                 # print("new leader", mynode.newL, mynode.LQ.all(), mynode.CL)
             
 class Peer(threading.Thread):
@@ -363,13 +375,13 @@ class Peer(threading.Thread):
 
         time.sleep(10)
 
-        for j in range(int(ID)+1, n+1):
+        for j in range(int(self.ID)+1, n+1):
             node.connect_with_node(config["nodes"][str(j)]["ip"],config["portBase"]+j)
             print("Node %s connect %d (%s:%d)"%(self.ID, j, config["nodes"][str(j)]["ip"], config["portBase"]+j))           
         time.sleep(int(ID)/3+10)
         v = {'pk':node.pvss.pk}
         v['epoch'] = -1
-        v['seq'] = "seq_%d"%(-1) 
+        v['seq'] = "ld_%sseq_%d"%(self.ID, -1) 
         node.send_to_nodes({"type": "pks", "v": json.dumps(v)})
         
         
@@ -381,7 +393,7 @@ class Peer(threading.Thread):
         
         starttime = time.time()
 
-        time.sleep(60)
+        time.sleep(config['pkswait'])
         print("Node %s consumer starts"%node.id)
         while True:
             if node.epoch <= 2:
@@ -389,7 +401,7 @@ class Peer(threading.Thread):
 
         #     # if "initial" in node.msgs and node.curSeq[node.L] in node.msgs["initial"]:
         #     #     print(len(node.msgs["initial"][node.curSeq[node.L]]))
-            time.sleep(config['consumerSleep']+random.random()*0.4)            
+            time.sleep(config['consumerSleep'])            
             if(node.newL == node.L):
                 print("node.newL == node.L",node.L)
                 continue
@@ -397,10 +409,11 @@ class Peer(threading.Thread):
                 print("node.newL not in node.curSeq")
                 continue
             
-            seq = "seq_%d"%(node.curSeq[node.newL])
+            seq = "ld_%sseq_%d"%(node.newL, node.curSeq[node.newL])
+            # print("node%s consume "%node.id, seq)
             sent = "sent_%s_%s"%("ready", seq)
 
-            sent2 = "ld_%sseq_%d"%(node.newL,node.curSeq[node.newL])
+            sent2 = "mynode_%sseq_%d"%(node.newL,node.curSeq[node.newL])
             if sent2 in sentDict:           
                 # print("%s has sent2 in sentDict"%node.id,getattr(node, "id"), sent2, node.epoch, seq, node.newL)
                 continue
@@ -431,16 +444,16 @@ class Peer(threading.Thread):
                 #     node.cis['reconReady'][sv['epoch']] = {}
                 node.cis['recon'][sv['epoch']][node.id] = sv['c_i']
                 node.send_to_nodes({"type": "recon", "v": json.dumps(sv)})
-            # else:
+            else:
                 # if sent not in node.msgs :
                 #     print(node.id,"wait for ",sent)
-                # if seq not in node.msgs["initial"]:
-                #     print(node.id,"wait for initial",seq)
-                # else:
-                #     if str(node.newL) not in node.msgs["initial"][seq] :
-                #         print(node.id,"wait for newL", str(node.newL), seq)
-                #     else:
-                #         print(node.id,"wait for >1")
+                if seq not in node.msgs["initial"]:
+                    print(node.id,"wait for initial",seq, "connected nodes:%s"%(len(node.nodes_outbound)+len(node.nodes_inbound)))                    
+                else:
+                    if str(node.newL) not in node.msgs["initial"][seq] :
+                        print(node.id,"wait for newL", str(node.newL), seq, "connected nodes:%s"%(len(node.nodes_outbound)+len(node.nodes_inbound)))                    
+                    else:
+                        print(node.id,"wait for >1", "connected nodes:%s"%(len(node.nodes_outbound)+len(node.nodes_inbound)))                    
            
 # from flask import Flask, render_template,request,jsonify,redirect,url_for,send_from_directory
 # class MyThread(threading.Thread):

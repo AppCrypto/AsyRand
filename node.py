@@ -31,6 +31,12 @@ class Queue:
     def full(self):
         return len(self.items) == self.FULL
 
+    def contain(self, item):
+        for i in self.items:
+            if i == item:
+                return True
+        return False
+
     def put(self, item):
         self.items.insert(0,item)
 
@@ -123,12 +129,12 @@ class Node(threading.Thread):
         self.canSendEcho={}
         self.pvss = PVSS(self.id)
         self.msgs={}#producer
-        self.seq = 0#producer
+        self.seq = 1#producer
         self.L = config['L']
         self.newL = self.L
 
         self.epoch=1
-        self.curSeq = {i:2 for i in range(1, n+1)}#consumer
+        self.curSeq = {i:1 for i in range(1, n+1)}#consumer
         self.LQ = Queue(f)
         # [self.LQ.put(i) for i in range(1,f+1)]
         self.CL = {}
@@ -183,11 +189,9 @@ class Node(threading.Thread):
         self.sendingCnt += len(self.nodes_inbound)
         self.sendingCnt += len(self.nodes_outbound)
         
-        if data["type"] in ["echo"]:
-            time.sleep(self.sendingCnt / 1000.)
-        else:
-            print("node:%s type:%s sendingCnt:%d datalen:%d"%(self.id, data["type"], self.sendingCnt, len(str(data))))
-            time.sleep(self.sendingCnt / 2000.)
+        # if data["type"] not in [""]:
+        #     datalen= len(str(data))
+        #     print("node:%s type:%s datalen:%d sendingCnt:%d"%(self.id, data["type"], datalen, self.sendingCnt))
         nodes_inbound = self.nodes_inbound.copy()
         for n in nodes_inbound:
             if n in exclude:
