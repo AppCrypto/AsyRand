@@ -182,10 +182,11 @@ class Node(threading.Thread):
         self.message_count_send = self.message_count_send + 1
         self.sendingCnt += len(self.nodes_inbound)
         self.sendingCnt += len(self.nodes_outbound)
-        print("node:%s type:%s sendingCnt:%d datalen:%d"%(self.id, data["type"], self.sendingCnt, len(str(data))))
+        
         if data["type"] in ["echo"]:
             time.sleep(self.sendingCnt / 1000.)
         else:
+            print("node:%s type:%s sendingCnt:%d datalen:%d"%(self.id, data["type"], self.sendingCnt, len(str(data))))
             time.sleep(self.sendingCnt / 2000.)
         nodes_inbound = self.nodes_inbound.copy()
         for n in nodes_inbound:

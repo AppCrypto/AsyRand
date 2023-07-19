@@ -116,7 +116,7 @@ def callback(event, mynode, yournode, data):
             sv['ts1'] = time.time()
             seqLatest = int(seq.split("_")[1])
             # time.sleep(0.2)
-            time.sleep(mynode.sendingCnt * random.random() / 40.)
+            time.sleep(mynode.sendingCnt / 80.)
 
             for i in range(0, C_Plen):
                 seqi = seqLatest - C_Plen + i 
@@ -203,7 +203,7 @@ def callback(event, mynode, yournode, data):
                 
                 # print(mynode.seq, mynode.seq, mynode.curSeq[int(mynode.id)] + C_Plen)
                 if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)]:
-                    time.sleep(config["sleep1"] + mynode.sendingCnt / 5)
+                    time.sleep(config["sleep1"]*(mynode.seq-mynode.curSeq[int(mynode.id)]-2) + mynode.sendingCnt / 5)
                 else:
                     time.sleep(config["sleep2"]+ mynode.sendingCnt / 40) 
 
@@ -223,21 +223,13 @@ def callback(event, mynode, yournode, data):
             Re_1=rv['Re_1']
 
             
-            # if mynode.newL in mynode.curSeq:
-            #     print(mynode.id, tp, mynode.newL, mynode.epoch, mynode.curSeq[mynode.newL], len(mynode.cis[tp][mynode.epoch]))
-            # else:
-            #     print(mynode.id, tp, mynode.newL, "mynode.newL in mynode.curSeq")
-        
-            # if mynode.epoch not in mynode.cis[tp]:
-            #     print(mynode.id, tp, mynode.epoch, "mynode.epoch not in mynode.cis[tp]")
-
             # print(mynode.id, tp, epoch, len(mynode.cis[tp][epoch]))
             if len(mynode.cis[tp][epoch]) > f and str(L) in mynode.msgs["initial"][seq]:
                 if not mynode.cis[sentConsumer]:
                      mynode.cis[sentConsumer] = True
                 else:
                     return
-                time.sleep(0.5) 
+                time.sleep(0.05) 
                 C=mynode.msgs["initial"][seq][str(L)]['C']
                 starttime = time.time()
                 cis=mynode.cis[tp][epoch].copy()
@@ -249,7 +241,8 @@ def callback(event, mynode, yournode, data):
                 sv['epoch'] = epoch                
                 sv['seq'] = seq
                 sv['newepoch'] = rv['newepoch']
-                sv['L'] = rv['L']                
+                sv['L'] = rv['L'] 
+                sv['LQ']=rv['LQ']
                 sv['Re_1'] = rv['Re_1']
                 sv['ts'] = rv['ts']
                 sv['ts1'] = rv['ts1']
@@ -265,19 +258,33 @@ def callback(event, mynode, yournode, data):
         elif tp == "reconEcho":            
             mynode.cis[tp][epoch][yourid] = rv['beaconV']
             
+            flag=False
+            if len(mynode.cis["reconReady"][epoch]) > f:
+                cis_tp_epoch =mynode.cis["reconReady"][epoch].copy()
+                values = {}  
+                for yid in cis_tp_epoch:
+                    lqHash = mynode.pvss.hash(cis_tp_epoch[yid])
+                    if lqHash not in values:
+                        values[lqHash] = 0
+                    values[lqHash] += 1
+                for lqHash in values:
+                    if values[lqHash] > f:
+                        flag=True
+
             
-            if len(mynode.cis[tp][epoch]) > 2*f or len(mynode.cis["reconReady"][epoch]) > f:
+            if len(mynode.cis[tp][epoch]) > 2*f or flag:
                 if not mynode.cis[sentConsumer]:
                      mynode.cis[sentConsumer] = True
                 else:
                     return         
-                time.sleep(0.5)                
+                time.sleep(0.05)                
                 sv = {"beaconV":rv['beaconV']}
                 sv['epoch'] = epoch
                 sv['seq'] = seq            
                 sv['newepoch'] = rv['newepoch']  
                 sv['L'] = rv['L']                
                 sv['Re_1'] = rv['Re_1']      
+                sv['LQ'] = rv['LQ']
                 sv['ts'] = rv['ts']
                 sv['ts1'] = rv['ts1']
                 sv['ts2'] = rv['ts2']
@@ -286,42 +293,60 @@ def callback(event, mynode, yournode, data):
                 if epoch not in mynode.cis["reconReady"]:
                     mynode.cis["reconReady"][epoch]={}
                 if mynode.id not in mynode.cis["reconReady"][epoch]:
-                    mynode.cis["reconReady"][epoch][mynode.id]=sv['beaconV']
+                    mynode.cis["reconReady"][epoch][mynode.id]={"beaconV":rv['beaconV'],"LQ":rv['LQ'],'L':rv['L'], 'Re_1':rv['Re_1'],'newepoch':rv['newepoch']}
                 # print("node %s send reconReady ct: %s"%(mynode.id, sv))
                 mynode.send_to_nodes({"type": "reconReady", "v": json.dumps(sv)})
         elif tp == "reconReady":
-            # print(rv, "beaconV" in rv)
-            
-            mynode.cis[tp][epoch][yourid] = rv['beaconV']
-            if len(mynode.cis[tp][epoch]) > 2*f:                
+
+            mynode.cis[tp][epoch][yourid] = {"beaconV":rv['beaconV'],"LQ":rv['LQ'],'L':rv['L'], 'Re_1':rv['Re_1'],'newepoch':rv['newepoch']}
+            if len(mynode.cis[tp][epoch]) > 2*f: 
+
+                cis_tp_epoch =mynode.cis[tp][epoch].copy()
+                values = {}  
+                for yid in cis_tp_epoch:
+                    lqHash = mynode.pvss.hash(cis_tp_epoch[yid])
+                    if lqHash not in values:
+                        values[lqHash] = 0
+                    values[lqHash] += 1
+
+                if values[mynode.pvss.hash(mynode.cis[tp][epoch][yourid])] <= 2*f:
+                    print("node%s reconReady------------------------------------------------------- valid <= 2*f"%(mynode.id), values[mynode.pvss.hash(mynode.cis[tp][epoch][yourid])])
+                    return
+
                 if not mynode.cis[sentConsumer]:
                      mynode.cis[sentConsumer] = True
                 else:
                     return
+
+                if mynode.epoch >= rv['newepoch']:
+                    print("node%s reconReady-------------------------------------------------------mynode.epoch >= rv['newepoch']"%(mynode.id))
+                    return
                 time.sleep(0.05) 
-                beaconV = rv['beaconV']
-                L = rv['L']                
-                Re_1 = rv['Re_1']
-                mynode.curSeq[L]+=1
-                if mynode.LQ.full():
-                    oldestL = mynode.LQ.get()                    
-                mynode.LQ.put(L)
-                mynode.CL={i:True for i in range(1, n+1)}
-                for j in mynode.LQ.all():
-                    if j in mynode.CL:
-                        del mynode.CL[j]
-                keys = list(mynode.CL.keys())
-                newL = keys[int(beaconV) % len(mynode.CL)]
-                # endtime = time.time()
-                
-                if mynode.epoch == 10:
-                    print("%s(%s/%s) in %s consume %s's %s, output value: %s %.2fs/beacon %.2fs %.2fs %.2fs per"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, seq, beaconV%100000,(time.time()-rv['ts'])/2/epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'] ), len(str(mynode.msgs))/mynode.seq/1024., len(str(mynode.cis))/mynode.epoch/1024.)
-                else:
-                    print("%s(%s/%s) in %s consume %s's %s, output value: %s %.2fs/beacon %.2fs %.2fs %.2fs per"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, seq, beaconV%100000,(time.time()-rv['ts'])/2/epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'] ) )
-                mynode.Re_1 = beaconV                
-                mynode.epoch=rv['newepoch']
-                mynode.L=L
-                mynode.newL = newL
+                with threading.Lock():
+                    beaconV = rv['beaconV']
+                    L = rv['L']                
+                    Re_1 = rv['Re_1']
+                    mynode.curSeq[L]+=1                    
+                    mynode.LQ.setQueue(list(rv['LQ']));      
+                    if mynode.LQ.full():
+                        oldestL = mynode.LQ.get()     
+                    mynode.LQ.put(L)                         
+                    mynode.CL={i:True for i in range(1, n+1)}
+                    for j in mynode.LQ.all():
+                        if j in mynode.CL:
+                            del mynode.CL[j]
+                    keys = list(mynode.CL.keys())
+                    newL = keys[int(beaconV) % len(mynode.CL)]
+                    # endtime = time.time()
+                    
+                    if mynode.epoch == 10:
+                        print("%s(%s/%s) epoch:%s Node%s's %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, seq, beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.LQ.all() ), len(str(mynode.msgs))/mynode.seq/1024., len(str(mynode.cis))/mynode.epoch/1024.)
+                    else:
+                        print("%s(%s/%s) epoch:%s Node%s's %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, seq, beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.LQ.all()))
+                    mynode.Re_1 = beaconV                
+                    mynode.epoch=rv['newepoch']
+                    mynode.L=L
+                    mynode.newL = newL
                 # print("new leader", mynode.newL, mynode.LQ.all(), mynode.CL)
             
 class Peer(threading.Thread):
@@ -364,7 +389,7 @@ class Peer(threading.Thread):
 
         #     # if "initial" in node.msgs and node.curSeq[node.L] in node.msgs["initial"]:
         #     #     print(len(node.msgs["initial"][node.curSeq[node.L]]))
-            time.sleep(config['consumerSleep'])            
+            time.sleep(config['consumerSleep']+random.random()*0.4)            
             if(node.newL == node.L):
                 print("node.newL == node.L",node.L)
                 continue
@@ -392,18 +417,19 @@ class Peer(threading.Thread):
                 sv['epoch'] = node.epoch
                 sv['newepoch'] = node.epoch+1
                 sv['L'] = node.newL
+                sv['LQ']=list(node.LQ.all())               
                 sv['seq'] = seq
                 sv['Re_1'] = node.Re_1
                 sv['ts'] = starttime
                 sv['ts1'] = time.time()
                 # print("%s start to consume %d's %dth ciphertext %s cost:%s"%(node.id, node.newL, node.curSeq[node.newL], int(node.pvss.hash(EC))%100000, time.time()-starttime))  
-                if node.epoch not in node.cis['recon']:
-                    node.cis['recon'][node.epoch] = {}
-                # if node.epoch not in node.cis['reconEcho']:
-                #     node.cis['reconEcho'][node.epoch] = {}
-                # if node.epoch not in node.cis['reconReady']:
-                    node.cis['reconReady'][node.epoch] = {}
-                node.cis['recon'][node.epoch][node.id] = sv['c_i']
+                if sv['epoch'] not in node.cis['recon']:
+                    node.cis['recon'][sv['epoch']] = {}
+                # if sv['epoch'] not in node.cis['reconEcho']:
+                #     node.cis['reconEcho'][sv['epoch']] = {}
+                # if sv['epoch'] not in node.cis['reconReady']:
+                #     node.cis['reconReady'][sv['epoch']] = {}
+                node.cis['recon'][sv['epoch']][node.id] = sv['c_i']
                 node.send_to_nodes({"type": "recon", "v": json.dumps(sv)})
             # else:
                 # if sent not in node.msgs :

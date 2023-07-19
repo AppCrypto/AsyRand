@@ -6,9 +6,9 @@
 	"L":4,
 	"C_Plen":1,
 	"C_Ptimes":2,
-	"sleep1":70,
+	"sleep1":120,
 	"sleep2":10,
-	"consumerSleep":0.8,
+	"consumerSleep":0.5,
 	"rcvsize":40960,	
 	"nodes":{
 		"1":{"ip":"15.156.141.12"},
