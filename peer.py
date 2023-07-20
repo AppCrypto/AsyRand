@@ -193,12 +193,13 @@ def callback(event, mynode, yournode, data):
                 # print(seq, seqistr, mynode.msgs[tp][seqistr])
                 if seq.startswith("ld_%sseq_"%(mynode.id)):
                     
-                                    
-                    if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)]:
-                        time.sleep(config["sleep1"]*(mynode.seq-mynode.curSeq[int(mynode.id)]-2) + mynode.sendingCnt/ 10)
-                    else:
-                        if mynode.sendingCnt > 0:
-                            time.sleep(config["sleep2"] + mynode.sendingCnt / 100)
+                    while mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)] :
+                        time.sleep(1)
+                    # if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)]:
+                    #     time.sleep(config["sleep1"]*(mynode.seq-mynode.curSeq[int(mynode.id)]-2) + mynode.sendingCnt/ 10)
+                    # else:
+                    #     if mynode.sendingCnt > 0:
+                    #         time.sleep(config["sleep2"] + mynode.sendingCnt / 100)
 
                     if CTs == None:
                         CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
@@ -224,7 +225,7 @@ def callback(event, mynode, yournode, data):
                         
                     mynode.seq += C_Plen
                     mynode.send_to_nodes({"type": "initial", "v": json.dumps(sv)})  
-
+                    print("node%s start to initial at seq:%s"%(mynode.id, mynode.seq))
                     sv['hC_Ps'] = hC_Ps
                     del sv['C_Ps']
                     mynode.send_to_nodes({"type": "echo", "v": json.dumps(sv)})                     
@@ -356,7 +357,7 @@ def callback(event, mynode, yournode, data):
                 # endtime = time.time()
                 
                 size = 0
-                if mynode.epoch %10 ==0:
+                if mynode.epoch <10:
                     for tpi in ["initial", "echo", "ready"]:
                         for seqistr in mynode.msgs[tpi]:
                             if seqistr.startswith("ld_%sseq_"%(mynode.id)):
