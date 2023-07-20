@@ -135,8 +135,10 @@ class PVSS():
 
 if __name__ == "__main__":
     
-    # N = int(sys.argv[1])
+    
     N = len(config['nodes'])
+    if len(sys.argv)>1:
+        N = int(sys.argv[1])
     t=int((N -1)/3+1)
     sks={i: random_scalar() for i in range(0, N+1)}
     

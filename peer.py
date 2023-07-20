@@ -118,7 +118,8 @@ def callback(event, mynode, yournode, data):
             sv['ts1'] = time.time()
             seqStart = int(seq.split("seq_")[1])
             # time.sleep(0.2)
-            time.sleep(mynode.sendingCnt / 500.)
+            if mynode.sendingCnt > 0:
+                time.sleep(mynode.sendingCnt / 500.)
 
             for i in range(0, C_Plen):
                 seqi = seqStart + i 
@@ -150,8 +151,9 @@ def callback(event, mynode, yournode, data):
                 else:
                     return                
                 sv['ts2'] = time.time() 
-                # time.sleep(0.2)  
-                time.sleep(mynode.sendingCnt / 500)         
+                # time.sleep(0.2) 
+                if mynode.sendingCnt > 0: 
+                    time.sleep(mynode.sendingCnt / 500)         
                 
                 
                 seqStart = int(seq.split("seq_")[1])
@@ -195,7 +197,8 @@ def callback(event, mynode, yournode, data):
                     if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)]:
                         time.sleep(config["sleep1"]*(mynode.seq-mynode.curSeq[int(mynode.id)]-2) + mynode.sendingCnt/ 10)
                     else:
-                        time.sleep(config["sleep2"] + mynode.sendingCnt / 100)
+                        if mynode.sendingCnt > 0:
+                            time.sleep(config["sleep2"] + mynode.sendingCnt / 100)
 
                     if CTs == None:
                         CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
@@ -334,6 +337,7 @@ def callback(event, mynode, yournode, data):
                 if mynode.epoch >= rv['newepoch']:
                     print("node%s reconReady-------------------------------------------------------mynode.epoch >= rv['newepoch']"%(mynode.id))
                     return
+            
                 time.sleep(0.05) 
                 beaconV = rv['beaconV']
                 L = rv['L']                
@@ -351,15 +355,20 @@ def callback(event, mynode, yournode, data):
                 newL = keys[int(beaconV) % len(mynode.CL)]
                 # endtime = time.time()
                 
-                if mynode.epoch == 10:
-                    print("%s(%s/%s) epoch:%s Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt, mynode.LQ.all() ), len(str(mynode.msgs))/mynode.seq/1024., len(str(mynode.cis))/mynode.epoch/1024.)
+                size = 0
+                if mynode.epoch %10 ==0:
+                    for tpi in ["initial", "echo", "ready"]:
+                        for seqistr in mynode.msgs[tpi]:
+                            if seqistr.startswith("ld_%sseq_"%(mynode.id)):
+                                size+=len(str(mynode.msgs[tpi][seqistr]))
+                    print("%s(%s/%s) epoch:%s Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, newL, seq, 
+                        beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt, mynode.LQ.all() ), size/(mynode.seq-1)/1024., len(str(mynode.cis))/mynode.epoch/1024.)
                 else:
-                    print("%s(%s/%s) epoch:%s Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt, mynode.LQ.all()))
+                    print("%s(%s/%s) epoch:%s Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt, mynode.LQ.all()), "cons:%s"%(len(mynode.nodes_outbound)+len(mynode.nodes_inbound)))
                 mynode.Re_1 = beaconV                
                 mynode.epoch=rv['newepoch']
                 mynode.L=L
                 mynode.newL = newL
-                # print("new leader", mynode.newL, mynode.LQ.all(), mynode.CL)
             
 class Peer(threading.Thread):
     def __init__(self, ID):
@@ -395,7 +404,16 @@ class Peer(threading.Thread):
 
         time.sleep(config['pkswait'])
         print("Node %s consumer starts"%node.id)
+        lastReconn = time.time()
         while True:
+
+            if len(node.nodes_outbound)+len(node.nodes_inbound) < n-1:                
+                if time.time() - lastReconn > 5:
+                    node.reconnect_nodes()    
+                    lastReconn = time.time()
+                # time.sleep(0.5)
+                # print("node%s connections %d node.reconnect_nodes()==========================================="%(node.id, len(node.nodes_outbound)+len(node.nodes_inbound)))
+
             if node.epoch <= 2:
                 starttime = time.time()
 
@@ -422,6 +440,7 @@ class Peer(threading.Thread):
             if "initial" in node.msgs and (seq in node.msgs["initial"] and \
                  str(node.newL) in node.msgs["initial"][seq]):# and \
                  # len(node.msgs["initial"][seq][str(node.newL)])>=1 :
+
                 sentDict[sent2]=True
 
                 EC = node.msgs["initial"][seq][str(node.newL)]

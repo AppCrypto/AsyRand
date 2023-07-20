@@ -198,7 +198,9 @@ class Node(threading.Thread):
                 self.debug_print("Node send_to_nodes: Excluding node in sending the message")
             else:
                 self.send_to_node(n, data, compression)
-                self.sendingCnt -=1
+                if self.sendingCnt >0:
+                    self.sendingCnt -=1
+
 
         nodes_outbound = self.nodes_outbound.copy()
         for n in nodes_outbound:
@@ -217,7 +219,7 @@ class Node(threading.Thread):
         else:
             self.debug_print("Node send_to_node: Could not send the data, node is not found!")
 
-    def connect_with_node(self, host, port, reconnect=False):
+    def connect_with_node(self, host, port, reconnect=True):
         """ Make a connection with another node that is running on host with port. When the connection is made, 
             an event is triggered outbound_node_connected. When the connection is made with the node, it exchanges
             the id's of the node. First we send our id and then we receive the id of the node we are connected to.
