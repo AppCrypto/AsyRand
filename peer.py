@@ -5,7 +5,7 @@ from node import Node
 # sys.path.insert(0, '..') # Import the files where the modules are located
 import newjson as json,threading,multiprocessing
 from multiprocessing import Process, Manager 
- 
+import zlib, bz2, lzma, base64
 
 
 from config import config
@@ -38,7 +38,7 @@ def callback(event, mynode, yournode, data):
         
 
         for tpi in ["pks", "initial","echo", "ready"]:
-            
+        
             if tpi not in mynode.msgs:
                 mynode.msgs[tpi]={}     
 
@@ -50,14 +50,18 @@ def callback(event, mynode, yournode, data):
 
             seqStart = int(seq.split("seq_")[1])        
 
-        if tp in ["pks", "initial","echo", "ready"]:
+        if tp in ["pks", "initial","echo", "ready"]:            
+            mynode.producerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
+            mynode.recvSize = mynode.producerRecvSize + mynode.consumerRecvSize
             leaderID = seq.split("ld_")[1].split("seq_")[0]
             for i in range(0, C_Plen):
                 seqistr = 'ld_%sseq_%d'%(leaderID, seqStart + i )      
                 if seqistr not in mynode.msgs[tp]:
                     mynode.msgs[tp][seqistr]={}
 
-                        
+        if tp in ["recon", "reconEcho", "reconReady"]:
+            mynode.consumerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
+            mynode.recvSize = mynode.producerRecvSize + mynode.consumerRecvSize
         for tpi in ["recon", "reconEcho", "reconReady"]:
             if tpi not in mynode.cis:
                 mynode.cis[tpi]={}
@@ -356,16 +360,14 @@ def callback(event, mynode, yournode, data):
                 newL = keys[int(beaconV) % len(mynode.CL)]
                 # endtime = time.time()
                 
-                size = 0
-                if mynode.epoch <10:
-                    for tpi in ["initial", "echo", "ready"]:
-                        for seqistr in mynode.msgs[tpi]:
-                            if seqistr.startswith("ld_%sseq_"%(mynode.id)):
-                                size+=len(str(mynode.msgs[tpi][seqistr]))
-                    print("%s(%s/%s) epoch:%s Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, newL, seq, 
-                        beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt, mynode.LQ.all() ), size/(mynode.seq-1)/1024., len(str(mynode.cis))/mynode.epoch/1024.)
-                else:
-                    print("%s(%s/%s) epoch:%s Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s LQ:%s"%(mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch, L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/2/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt, mynode.LQ.all()), "cons:%s"%(len(mynode.nodes_outbound)+len(mynode.nodes_inbound)))
+                printStr = "%s(%s/%s) epoch:%s"% (mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch)
+                printStr = printStr+ " Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s "% (L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt)
+                printStr = printStr+ " producer RCV:%.2f"%(mynode.producerRecvSize/mynode.epoch/1024.)
+                printStr = printStr+ " consumer RCV:%.2f"%(mynode.consumerRecvSize/mynode.epoch/1024.)
+                printStr = printStr+ " sentsize:%.2f"%(mynode.sentSize/mynode.epoch/1024.)
+                printStr = printStr+ " recvsize:%.2f"%(mynode.recvSize/mynode.epoch/1024.)
+                print(printStr)
+                     
                 mynode.Re_1 = beaconV                
                 mynode.epoch=rv['newepoch']
                 mynode.L=L

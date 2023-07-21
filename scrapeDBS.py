@@ -106,7 +106,7 @@ class SCRAPE():
 
         for i in range(1, t+1):
             stidle.append(dis["shat"][i]**(1/self.sks[i]))
-        # print(len(str(stidle[1])))
+        # print(len(str(stidle[1]))) 
         
         recon={}
         recon["stidle"]=stidle

@@ -8,6 +8,7 @@ import hashlib
 from nodeConnection import NodeConnection
 # sys.path.append("P2PNetWork")
 from pvss import PVSS
+import zlib, bz2, lzma, base64
 """
 Author: Maurice Snoeren <macsnoeren(at)gmail.com>
 Version: 0.3 beta (use at your own risk)
@@ -147,6 +148,15 @@ class Node(threading.Thread):
         
         self.sendingCnt = 0
 
+        self.sentSize = 0
+        self.recvSize = 0
+
+        self.producerRecvSize=0
+        self.consumerRecvSize=0
+
+        # self.producerSentSize=0
+        # self.consumerSentSize=0
+
     @property
 
     def all_nodes(self):
@@ -179,7 +189,7 @@ class Node(threading.Thread):
         print("- Total nodes connected with us: %d" % len(self.nodes_inbound))
         print("- Total nodes connected to     : %d" % len(self.nodes_outbound))
 
-    def send_to_nodes(self, data, exclude=[], compression='none'):
+    def send_to_nodes(self, data, exclude=[], compression='zlib'):
         """ Send a message to all the nodes that are connected with this node. data is a python variable which is
             converted to JSON that is send over to the other node. exclude list gives all the nodes to which this
             data should not be sent.
@@ -197,7 +207,7 @@ class Node(threading.Thread):
             if n in exclude:
                 self.debug_print("Node send_to_nodes: Excluding node in sending the message")
             else:
-                self.send_to_node(n, data, compression)
+                self.send_to_node(n, data, compression)                
                 if self.sendingCnt >0:
                     self.sendingCnt -=1
 
@@ -207,13 +217,14 @@ class Node(threading.Thread):
             if n in exclude:
                 self.debug_print("Node send_to_nodes: Excluding node in sending the message")
             else:
-                self.send_to_node(n, data, compression)
+                self.send_to_node(n, data, compression)                
                 self.sendingCnt -=1
 
-    def send_to_node(self, n, data, compression='none'):
+    def send_to_node(self, n, data, compression='zlib'):
         """ Send the data to the node n if it exists."""        
         self.message_count_send = self.message_count_send + 1
         if n in self.nodes_inbound or n in self.nodes_outbound:
+            self.sentSize += len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
             n.send(data, compression=compression)
 
         else:

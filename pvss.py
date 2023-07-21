@@ -183,6 +183,6 @@ if __name__ == "__main__":
         # print(len(str(cis[i])))
     starttime = time.time()    
     testgstidle = pvss.recon(dist["C"], cis)    
-    print("pvss.share with %d nodes, cost %.2fs, size: %.2fkB"%(N, time.time()- starttime, len(str(cis))/1024.))
+    print("pvss.reconstruct with %d nodes, cost %.2fs, size: %.2fkB"%(N, time.time()- starttime, len(str(cis))/1024.))
     
     assert(json.loads(config['g'])**s == testgstidle)
