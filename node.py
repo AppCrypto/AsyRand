@@ -148,14 +148,12 @@ class Node(threading.Thread):
         
         self.sendingCnt = 0
 
-        self.sentSize = 0
-        self.recvSize = 0
-
+        
         self.producerRecvSize=0
         self.consumerRecvSize=0
 
-        # self.producerSentSize=0
-        # self.consumerSentSize=0
+        self.producerSentSize=0
+        self.consumerSentSize=0
 
     @property
 
@@ -224,7 +222,10 @@ class Node(threading.Thread):
         """ Send the data to the node n if it exists."""        
         self.message_count_send = self.message_count_send + 1
         if n in self.nodes_inbound or n in self.nodes_outbound:
-            self.sentSize += len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
+            if data["type"] in ["initial","echo", "ready"]:
+                self.producerSentSize += len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
+            elif data["type"] in ["recon", "reconEcho", "reconReady"]:
+                self.consumerSentSize += len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
             n.send(data, compression=compression)
 
         else:

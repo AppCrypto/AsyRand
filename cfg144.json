@@ -6,8 +6,6 @@
 	"L":4,
 	"C_Plen":1,
 	"C_Ptimes":1,
-	"sleep1":30,
-	"sleep2":10,
 	"consumerSleep":0.8,
 	"rcvsize":40960,	
 	"pkswait":30,
