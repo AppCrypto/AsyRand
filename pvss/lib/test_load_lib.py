@@ -3,7 +3,8 @@ import ctypes
 
 
 def test_load_lib():
-    libpath = os.path.join(os.path.dirname(__file__), "./custom-libsodium.so")
+    libpath = os.path.join(os.path.dirname(__file__), "libsodium.dylib")
+    print("path:========",libpath)
     lib = ctypes.cdll.LoadLibrary(os.path.join(libpath))
 
     def random_scalar(result=None):

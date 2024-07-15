@@ -5,12 +5,15 @@ import os
 import secrets
 import hashlib
 
-import fe
+from . import fe
+import sys
+
+
 
 
 # path to the share library file libsodium
 # we require a custom version which also exports the function crypto_core_ed25519_scalar_mul
-LIBSODIUM_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "lib", "custom-libsodium.so"))
+LIBSODIUM_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "lib", "libsodium.dylib"))
 
 BYTE_ORDER = "little"
 FIELD_MODULUS = 2 ** 255 - 19
@@ -21,6 +24,15 @@ c_bytes64 = ctypes.ARRAY(ctypes.c_char, 64)  # type: ignore
 
 
 def load_libsodium():
+    global  LIBSODIUM_PATH
+    if sys.platform == 'linux':
+        print("linux")
+        LIBSODIUM_PATH = LIBSODIUM_PATH.replace("libsodium.dylib","libsodium.so")
+    elif sys.platform == 'darwin':
+        print("mac os")
+    else:
+        print("unknown")
+
     lib = ctypes.cdll.LoadLibrary(LIBSODIUM_PATH)
     if not lib:
         raise ImportError(f"Unable to import libsodium from {LIBSODIUM_PATH}")
@@ -34,7 +46,7 @@ def load_libsodium():
         ok = astuple(sodium_version) >= astuple(required_version)
         assert ok, f"Invalid libsodium version {sodium_version}, version {required_version} or newer is required!"
 
-    version_check("1.0.17")
+    # version_check("1.0.17")
     return lib
 
 

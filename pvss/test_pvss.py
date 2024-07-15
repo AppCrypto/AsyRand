@@ -1,6 +1,6 @@
 import random
 
-from hydrand.pvss import (
+from pvss import (
     keygen,
     decrypt_share,
     share_random_secret,
@@ -12,8 +12,8 @@ from hydrand.pvss import (
     recover,
     Polynomial,
 )
-from hydrand.pvss import G, H, _DLEQ_prove, _DLEQ_verify
-from hydrand.ed25519 import Scalar
+from pvss import G, H, _DLEQ_prove, _DLEQ_verify
+from ed25519 import Scalar
 
 NUM_NODES = 10
 RECOVERY_THRESHOLD = 5
@@ -27,6 +27,7 @@ decrypted_shares = [decrypt_share(share, sk) for share, sk in zip(encrypted_shar
 
 def test_dleq():
     α = Scalar.random()
+    print("size:=========",len(str(G*α)))
     e, z = _DLEQ_prove(G, G * α, H, H * α, α)
     assert _DLEQ_verify(G, G * α, H, H * α, e, z)
 

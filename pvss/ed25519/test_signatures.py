@@ -7,7 +7,6 @@ from ed25519.testvectors import TEST_VECTORS, TestVector
 
 path = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(path)
-import ed25519_ref
 
 
 @pytest.mark.parametrize("v", TEST_VECTORS)

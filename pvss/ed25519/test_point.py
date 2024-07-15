@@ -5,11 +5,11 @@ from copy import copy
 
 from ed25519 import fe, Point, Scalar
 
+
 B = Point.B
 
 
 def test_base_multiply_by_one():
-    print("point size:",len(str(B)))
     assert B == Point.base_times(Scalar(1))
 
 

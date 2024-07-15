@@ -3,6 +3,7 @@ import math
 from typing import List, NewType
 from hashlib import sha256
 
+# from hydrand.data import Hash
 
 Hash = NewType("Hash", bytes)
 
