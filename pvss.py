@@ -12,7 +12,7 @@ import random
 # import utils.newjson as json
 
 
-groupObj = PairingGroup("SS512")
+groupObj = PairingGroup("MNT159")
 from config import config
 
 def random_scalar():
@@ -23,12 +23,13 @@ class PVSS():
     def __init__(self, ID):
         self.util = SecretUtil(groupObj, verbose=False)
         self.group = groupObj
-        self.g, self.h = json.loads(config['g']), json.loads(config['h'])
+        self.g, self.h = json.loads(config['g']), json.loads(config['h'])#self.group.random(G1),self.group.random(G1)
+        self.g2 = self.group.random(G2)
         # self.pks={}        
         # print(json.dumps({"g":self.g, "h":self.h}))
         self.ID=ID
         self.sk=random_scalar()
-        self.pk=self.h ** self.sk
+        self.pk=[self.h ** self.sk, self.g2**self.sk]
         self.pks={int(ID):self.pk}
         # self.N=0
         # self.t=0
@@ -57,7 +58,7 @@ class PVSS():
         C1 = {}
         # print(self.pks)
         for j in range(1, self.N+1):
-            C1[j] = self.pks[j] ** Pis[j]
+            C1[j] = self.pks[j][0] ** Pis[j]
             #print(C1[j])
 
         C = {"Com": Com, "C1": C1}        
@@ -67,7 +68,7 @@ class PVSS():
         _Com = (self.h ** _w) * (self.g ** _s)
         _C1 = {}
         for j in range(1, self.N + 1):
-            _C1[j] = self.pks[j] ** _pi[j]
+            _C1[j] = self.pks[j][0] ** _pi[j]
         #print(_C1[1])
         Cp = {"_Com": _Com, "_C1": _C1}
         c = self.group.hash(str(C) + str(Cp), ZR)
@@ -116,8 +117,8 @@ class PVSS():
         # print(cis)
         mycis= {}
         for i in cis:
-            # assert pair(cis[i], self.pks[int(i)]) == pair(self.h, C["C1"][i])
-            if pair(cis[i], self.pks[int(i)]) == pair(self.h, C["C1"][i]):
+            assert pair(cis[i], self.pks[int(i)][1]) == pair(self.g2, C["C1"][i])
+            if pair(cis[i], self.pks[int(i)][1]) == pair(self.g2, C["C1"][i]):
                 mycis[i] = cis[i]
             else:
                 print("=========================================================",i, cis[i])
@@ -148,12 +149,12 @@ if __name__ == "__main__":
     g1 = pvss.h ** random_scalar()
     print("exponetiation cost %.3f"%(time.time()- starttime))
     
-    g2 = pvss.h ** random_scalar()
+    g2 = pvss.g2 ** random_scalar()
     starttime = time.time()
     pair(g1,g2)
     print("pairing cost %.3f"%(time.time()- starttime))
     
-    [pvss.setPK(i, pvss.h ** sks[i]) for i in range(1, N+1)]
+    [pvss.setPK(i, [pvss.h ** sks[i], pvss.g2 ** sks[i]]) for i in range(1, N+1)]
     print("N=%d,t=%d" % (N, t))
 
     s = groupObj.random(ZR)

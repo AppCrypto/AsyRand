@@ -64,7 +64,7 @@ def tInNrandom(t, n) :
 if __name__ == "__main__":
     # import random as mathrandom
     import time
-    group = PairingGroup('SS512')
+    group = PairingGroup('MNT159')
     a = SecretUtil(group, False)
     t=13
     n=20

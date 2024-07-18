@@ -4,7 +4,7 @@ import json
 from charm.toolbox.pairinggroup import PairingGroup
 from charm.core.math.pairing import pc_element
 
-group = PairingGroup('SS512')
+group = PairingGroup('MNT159')
 class ElementEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, pc_element):
@@ -50,7 +50,7 @@ def loads(data,c= ElementDecoder):
 #
 # if __name__ == '__main__':
 #
-#     group = PairingGroup('SS512')
+#     group = PairingGroup('MNT159')
 #     maabe = MaabeRW15(group)
 #     gp = maabe.setup()
 #     rand = group.random()
@@ -66,7 +66,7 @@ def loads(data,c= ElementDecoder):
 # >>> from charm.toolbox.pairinggroup import PairingGroup
 # >>> from newjson import ElementEncoder, ElementDecoder
 # >>> import json
-# >>> group = PairingGroup('SS512')
+# >>> group = PairingGroup('MNT159')
 # >>> maabe = MaabeRW15(group)
 # >>> gp = maabe.setup()
 # >>> rand = group.random()

@@ -132,7 +132,7 @@ class SCRAPE():
             return -2
         return z
 
-groupObj = PairingGroup("SS512")
+groupObj = PairingGroup("MNT159")
 scrape = SCRAPE(groupObj)
 print("N=%d,t=%d"%(N,t))
 dis= scrape.distribute()
