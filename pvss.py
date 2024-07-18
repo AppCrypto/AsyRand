@@ -88,7 +88,7 @@ class PVSS():
         
         try:
             for i in proofs["Cp"]["_C1"]:        
-                assert(proofs["Cp"]["_C1"][i] == (self.pks[int(i)] ** proofs["pitidle"][i]) * (C["C1"][i] ** proofs["c"]))
+                assert(proofs["Cp"]["_C1"][i] == (self.pks[int(i)][0] ** proofs["pitidle"][i]) * (C["C1"][i] ** proofs["c"]))
         except Exception as e:
             print("self.ID", e)
             open("error.txt", "a").write("self.ID " + json.dumps({"C":C, "proofs":proofs}))
