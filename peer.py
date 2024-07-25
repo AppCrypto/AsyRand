@@ -116,7 +116,7 @@ def callback(event, mynode, yournode, data):
                 seqi = seqStart + i 
                 seqistr = 'ld_%sseq_%d'%(leaderID, seqi)
                 mynode.msgs[tp][seqistr][yourid] = rv['C_Ps'][i]
-                mynode.pvss.verify(rv['C_Ps'][i]["C"], rv['C_Ps'][i]["proof_sw"])
+                mynode.pvss.verify(rv['C_Ps'][i]["C"], rv['C_Ps'][i]["pi"])
             sv = {"hC_Ps":mynode.pvss.hash(rv['C_Ps'])}            
             sv['epoch'] = epoch
             sv['seq'] = seq   
