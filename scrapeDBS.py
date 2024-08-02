@@ -131,6 +131,7 @@ class SCRAPE():
             z *= stidle[i]**y[i]    
         print("ScrapeDBS reconstruction cost %.3fs size %.2fkB"%(time.time()- starttime, (len(str(recon))/1024.)))
         if self.S!=z: 
+            print("ScrapeDBS fail to reconstruct")
             return -2
         return z
 

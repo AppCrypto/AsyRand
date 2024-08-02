@@ -31,8 +31,8 @@ class PVSS():
         self.sk=random_scalar()
         self.pk=[self.g ** self.sk, self.g2**self.sk]
         self.pks={int(ID):self.pk}
-        # self.N=0
-        # self.t=0
+        self.N=0
+        self.t=0
 
     def setPK(self, i, pk):
         self.pks[i]=pk
@@ -46,10 +46,10 @@ class PVSS():
         self.t=t
         ts = time.time()
 
-        
-        Pis =  self.util.genShares(s, self.t, self.N)
         if s == None:
             s = self.group.random(ZR)
+        
+        Pis =  self.util.genShares(s, self.t, self.N)
         
         C1 = {}
         # print(self.pks)
@@ -115,7 +115,7 @@ class PVSS():
             if pair(cis[i], self.pks[int(i)][1]) == pair(self.g2, C["C1"][i]):
                 mycis[i] = cis[i]
             else:
-                print("=========================================================",i, cis[i])
+                print("error=========================================================",i, cis[i])
 
         mui=self.util.recoverCoefficients([int(i) for i in list(mycis.keys())])
 
