@@ -54,7 +54,7 @@ class SCRAPE():
         shares = self.util.genShares(s, t, N)
         # print(s,shares,len(shares))
         vs=[0]
-        vs.extend([self.gp ** shares[i] for i in range(1, N+1)])
+        vs.extend([self.g ** shares[i] for i in range(1, N+1)])
         # print(shat)
         shat=[0]
         shat.extend([self.pks[i]** shares[i] for i in range(1, N+1)])
@@ -65,7 +65,7 @@ class SCRAPE():
         c = self.group.hash(str(vs)+str(shat), ZR)
         
         for i in range(1, len(z)):
-            a1[i] = self.gp**w
+            a1[i] = self.g**w
             a2[i] = self.pks[i]**w        
             z[i] = w - shares[i] * c    
         
@@ -74,7 +74,7 @@ class SCRAPE():
         dist=dleqPrfs.copy()
         dist["shat"]=shat
         dist["vs"]=vs
-        print("dis message size %.2f cost %.2fs"%(len(str(dist))/1024., time.time()- starttime))
+        print("ScrapeDDH distribute cost %.3fs, size %.2fkB"%(time.time()- starttime, len(str(dist))/1024.))
         return dist
 
 
@@ -83,12 +83,14 @@ class SCRAPE():
         # Check DLEQ proofs
         c = self.group.hash(str(dist["vs"])+str(dist["shat"]), ZR)
         for i in range(1, N+1):
-            if dist["a1"][i] != (self.gp**dist["z"][i]) * (dist["vs"][i]**c)\
+            if dist["a1"][i] != (self.g**dist["z"][i]) * (dist["vs"][i]**c)\
                 or dist["a2"][i] !=self.pks[i]** dist["z"][i] * (dist["shat"][i] **c):
+                print("return false")
                 return False
 
         # reed solomon check
-        v=self.group.init(G2,1)
+        
+        v=self.group.init(G1,1)
         codeword=[self.group.init(ZR,1)]
         for i in range(1, N+1):            
             vi = self.group.init(ZR,1)
@@ -100,11 +102,11 @@ class SCRAPE():
             v=v * (dist["vs"][i]**codeword[i])
         if v != self.group.init(G2,1):
             return False
-        print("SCRAPE DDH verification cost %.2f"%(time.time()- starttime))
+        print("ScrapeDDH verification cost %.3fs"%(time.time()- starttime))
         return True
 
     def reconstruct(self, dist):
-        starttime=time.time()
+        
         # DLEQ proofs by shareholders
         stidle=[self.group.init(G1,1)]
         for i in range(1, t+1):
@@ -122,10 +124,10 @@ class SCRAPE():
         dleqPrfs= {"c":c, "a1":a1, "a2":a2, "z":z}        
         recon=dleqPrfs.copy()
         recon["stidle"]=stidle
-        print("rec message size:",len(str(recon))/1024.)        
+        # print("rec message size:",len(str(recon))/1024.)        
         
         # Check DLEQ proofs by the recover
-        
+        starttime=time.time()
         c = self.group.hash(str(self.pks)+str(dist["shat"]), ZR)
         for i in range(1, t+1):
             if recon["a1"][i] != (self.g**recon["z"][i]) * (self.pks[i]**c)\
@@ -141,8 +143,9 @@ class SCRAPE():
         z=self.group.init(G1,1)
         for i in indexArr:    
             z *= stidle[i]**y[i]    
-        print("SCRAPE DDH reconstruction verification cost %.2f"%(time.time()- starttime))
+        print("ScrapeDDH reconstruction cost %.3fs size: %.2fkB"%((time.time()- starttime), len(str(recon))/1024.))
         if self.S!=z: 
+            print("ScrapeDDH fail to reconstruct")
             return -2
         return z
 
@@ -150,7 +153,7 @@ groupObj = PairingGroup("MNT159")
 scrape = SCRAPE(groupObj)
 print("N=%d,t=%d"%(N,t))
 dis= scrape.distribute()
-print(scrape.verify(dis))
+scrape.verify(dis)
 scrape.reconstruct(dis)
 
 

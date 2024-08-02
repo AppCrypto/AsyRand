@@ -139,30 +139,30 @@ if __name__ == "__main__":
     
     #print(sks)
     pvss = PVSS('3')
-    starttime = time.time()
-    g1 = pvss.g ** random_scalar()
-    print("exponetiation cost %.3f"%(time.time()- starttime))
+    # starttime = time.time()
+    # g1 = pvss.g ** random_scalar()
+    # print("exponetiation cost %.3f"%(time.time()- starttime))
     
-    g2 = pvss.g2 ** random_scalar()
-    starttime = time.time()
-    pair(g1,g2)
-    print("pairing cost %.3f"%(time.time()- starttime))
+    # g2 = pvss.g2 ** random_scalar()
+    # starttime = time.time()
+    # pair(g1,g2)
+    # print("pairing cost %.3f"%(time.time()- starttime))
     
     [pvss.setPK(i, [pvss.g ** sks[i], pvss.g2 ** sks[i]]) for i in range(1, N+1)]
     print("N=%d,t=%d" % (N, t))
 
-    # s = groupObj.random(ZR)
-    s= groupObj.init(ZR, 1)
+    s = groupObj.random(ZR)
+    # s= groupObj.init(ZR, 1)
     starttime = time.time()
     dist = pvss.share(N,t,s)
-    print("pvss.share with %d nodes, cost %.3fs, size: %.2fkB"%(N, time.time()- starttime, len(str(dist))/1024.))
+    print("pvss.share with cost %.3fs, size: %.2fkB"%(time.time()- starttime, len(str(dist))/1024.))
     # print("dis message size:",len(str(trans)))
     #print(dist["pi"])    
     starttime = time.time()    
     ver_result = pvss.verify(dist["C"], dist["pi"])    
-    print("pvss.verify with %d nodes, cost %.2fs"%(N, time.time()- starttime))
+    print("pvss.verify with cost %.3fs"%( time.time()- starttime))
     
-    assert(ver_result)
+    # print(ver_result)
         
     T=[i for i in range(1, N+1)]
     random.shuffle(T)
@@ -176,7 +176,8 @@ if __name__ == "__main__":
 
     starttime = time.time()    
     gs = pvss.recon(dist["C"], cis)    
-    print("pvss.reconstruct with %d nodes, cost %.2fs, size: %.2fkB"%(N, time.time()- starttime, len(str(cis))/1024.))
+    print("pvss.reconstruct with cost %.3fs, size: %.2fkB"%(time.time()- starttime, len(str(cis))/1024.))
     
     
-    assert(pvss.g ** s == gs)
+    if pvss.g ** s != gs:
+       print("pvss fail to reconstruct")

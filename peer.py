@@ -13,7 +13,7 @@ from config import config
 ID = sys.argv[1]
 
 n=len(config["nodes"])
-f=int((len(config["nodes"]) -1)/3)
+f=int((n -1)/3)
         
 ip = config["nodes"][ID]["ip"]
 port = config["portBase"] + int(ID)

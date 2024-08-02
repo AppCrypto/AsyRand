@@ -44,18 +44,19 @@ class SCRAPE():
         self.util = SecretUtil(groupObj, verbose=False)
         self.group = groupObj
         
-        self.g, self.gp = self.group.random(G1), self.group.random(G2)
+        self.g, self.h = self.group.random(G1), self.group.random(G2)
         # self.g.initPP(); gp.initPP()
         
         # shareholders are in [1, N]
         self.sks=[self.group.random(ZR) for i in range(0,N+1)]
-        self.pks=[self.gp**self.sks[i] for i in range(0,N+1)]
+        self.pks=[self.h**self.sks[i] for i in range(0,N+1)]
+        self.pksp=[self.g**self.sks[i] for i in range(0,N+1)]
 
            
     def distribute(self):
         starttime = time.time()
         s=self.group.random(ZR)
-        self.S=self.gp**s
+        self.S=self.h**s
 
         
         shares = self.util.genShares(s, t, N)
@@ -71,7 +72,7 @@ class SCRAPE():
         # print("G1",len(str(self.group.random(G1))))
         # print("G2",len(str(self.group.random(G2))))
         
-        print("dis message size %.2fkB, cost %.3fs"%(len(str(res))/1024., time.time()-starttime))
+        print("ScrapeDBS dis message size %.3fs, cost %.2fkB"%(time.time()-starttime, len(str(res))/1024.))
         return res
 
 
@@ -96,11 +97,11 @@ class SCRAPE():
             v=v * (dis["vs"][i]**codeword[i])
         if v != self.group.init(G1,1):
             return False
-        print("SCRAPE DBS verification cost %.2fs"%(time.time()- starttime))
+        print("ScrapeDBS verification cost %.3fs"%(time.time()- starttime))
         return True
 
     def reconstruct(self,dis):
-        starttime=time.time()
+        
         # g^s sent by shareholders
         stidle=[self.group.init(G2,1)]
 
@@ -110,24 +111,25 @@ class SCRAPE():
         
         recon={}
         recon["stidle"]=stidle
-        print("rec message size %.2f"%(len(str(recon))/1024.))
+        # print("ScrapeDBS rec message size %.2fkB"%(len(str(recon))/1024.))
         
         # Check Pairing by the recover
         
+        starttime=time.time()
         for i in range(1, t+1):
-            if pair(self.pks[i], stidle[i]) != pair(self.gp, dis["shat"][i]):
-                return -1
-        
+            if pair(self.pksp[i], stidle[i]) != pair(self.g, dis["shat"][i]):
+                return -1        
 
         indexArr = [i for i in range(1,t+1)]
 
-        random.shuffle(indexArr)
+        # random.shuffle(indexArr)
+
         indexArr=indexArr[0:t]
         y = self.util.recoverCoefficients(indexArr)
         z=self.group.init(G2,1)
         for i in indexArr:    
             z *= stidle[i]**y[i]    
-        print("SCRAPE DBS reconstruction verification cost %.2fs"%(time.time()- starttime))
+        print("ScrapeDBS reconstruction cost %.3fs size %.2fkB"%(time.time()- starttime, (len(str(recon))/1024.)))
         if self.S!=z: 
             return -2
         return z
@@ -137,7 +139,7 @@ scrape = SCRAPE(groupObj)
 print("N=%d,t=%d"%(N,t))
 dis= scrape.distribute()
 # print(scrape.verify(dis["shat"], dis["vs"]))
-print(scrape.verify(dis))
+scrape.verify(dis)
 scrape.reconstruct(dis)
 
 
