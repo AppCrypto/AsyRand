@@ -62,7 +62,7 @@ def callback(event, mynode, yournode, data):
 
         if tp in ["recon", "reconEcho", "reconReady"]:
             mynode.consumerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
-            print(tp, len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))  )
+            # print(tp, len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))  )
 
         for tpi in ["recon", "reconEcho", "reconReady"]:
             if tpi not in mynode.cis:
@@ -358,7 +358,7 @@ def callback(event, mynode, yournode, data):
                 # endtime = time.time()
                 
                 printStr = "%s(%s/%s) epoch:%s"% (mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch)
-                printStr = printStr+ " Leader%s->%s %s, value: %s %.2fs/2beacon %.2fs %.2fs %.2fs per sendingCnt:%s "% (L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt)
+                printStr = printStr+ " Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s "% (L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt)
                 printStr = printStr+ " producer SEND:%.2f"%(mynode.producerSentSize/(mynode.epoch+(n*config["C_Ptimes"]))/1024.)
                 printStr = printStr+ " producer RCV:%.2f"%(mynode.producerRecvSize/(mynode.epoch+(n*config["C_Ptimes"]))/1024.)
                 printStr = printStr+ " consumer SEND:%.2f"%(mynode.consumerSentSize/mynode.epoch/1024.)

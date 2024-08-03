@@ -3,6 +3,7 @@
 	"portBase":8100,
 	"g": "{\"_type\": \"element\", \"value\": {\"_type\": \"bytes\", \"value\": \"1:OcVso7qM5F+IdelwaWNyvLOnNU8B\"}}",
 	"h": "{\"_type\": \"element\", \"value\": {\"_type\": \"bytes\", \"value\": \"1:EE/NJ7ZGd65QTLZpO06RQFcQDAUB\"}}",
+	"g2":"{\"_type\": \"element\", \"value\": {\"_type\": \"bytes\", \"value\": \"2:HU4lhRwkIHlgd2RZeIB9vaYMxgI9zuuDR5bOxjq1vsuNpObctbbnFRPq2SdI3R+DvsZsIdYB/GR92v1jAA==\"}}",
 	"Re_1":1234567890987654321,
 	"L":4,
 	"C_Plen":1,

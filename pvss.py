@@ -24,9 +24,9 @@ class PVSS():
         self.util = SecretUtil(groupObj, verbose=False)
         self.group = groupObj
         self.g, self.h = json.loads(config['g']), json.loads(config['h'])#self.group.random(G1),self.group.random(G1)
-        self.g2 = self.group.random(G2)
+        self.g2 = json.loads(config['g2'])
         # self.pks={}        
-        # print(json.dumps({"g":self.g, "h":self.h}))
+        # print(json.dumps({"g":self.g, "h":self.h,"g2":self.g2}))
         self.ID=ID
         self.sk=random_scalar()
         self.pk=[self.g ** self.sk, self.g2**self.sk]
@@ -80,12 +80,12 @@ class PVSS():
 
     def verify(self, C, proofs):        
         
-        try:
-            for i in proofs["Cp"]["_C1"]:        
-                assert(proofs["Cp"]["_C1"][i] == (self.pks[int(i)][0] ** proofs["pitidle"][i]) * (C["C1"][i] ** proofs["c"]))
-        except Exception as e:
-            print("self.ID", e)
-            open("error.txt", "a").write("self.ID " + json.dumps({"C":C, "proofs":proofs}))
+        for i in proofs["Cp"]["_C1"]:        
+            if int(i) not in self.pks:
+                 print(self.ID, "verify error not in self.pks========================",i)
+            if (proofs["Cp"]["_C1"][i] != (self.pks[int(i)][0] ** proofs["pitidle"][i]) * (C["C1"][i] ** proofs["c"])):
+                print(self.ID, "verify error========================",i)
+                break
         stidle = proofs['stidle']        
         indexArr = [i for i in range(1, self.N+1)]
         y = self.util.recoverCoefficients(indexArr)
@@ -111,11 +111,11 @@ class PVSS():
         # print(cis)
         mycis= {}
         for i in cis:
-            # assert pair(cis[i], self.pks[int(i)][1]) == pair(self.g2, C["C1"][i])
+            
             if pair(cis[i], self.pks[int(i)][1]) == pair(self.g2, C["C1"][i]):
                 mycis[i] = cis[i]
             else:
-                print("error=========================================================",i, cis[i])
+                print("recon error=========================================================",i, cis[i],C["C1"][i],self.g2)
 
         mui=self.util.recoverCoefficients([int(i) for i in list(mycis.keys())])
 
