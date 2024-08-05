@@ -32,7 +32,7 @@ class SCRAPE():
 
     def dleq_verify(self, g, y1, pks, y2, c, a1, a2, z):
         for i in range(1, N+1):
-            if a1[i] != (g**z[i]) * (y1[i]**c):# or a2 !=pks** z[i] * y2[i] **c:
+            if a1[i] != (g**z[i]) * (y1[i]**c) or a2 !=pks** z[i] * y2[i] **c:
                 return False
         return True
 

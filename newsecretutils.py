@@ -6,6 +6,7 @@ from charm.core.math.pairing import ZR
 from charm.toolbox.pairinggroup import *
 # from .newpolicytree import *
 import sys,random
+import time
 
 class SecretUtil:
     def __init__(self, groupObj, verbose=True):
@@ -40,6 +41,27 @@ class SecretUtil:
 
     # shares is a dictionary
     def recoverCoefficients(self, list):
+        tmp={}
+        coeff = {}
+        list2 = [self.group.init(ZR, i) for i in list]
+        for i in list2:
+            # starttime= time.time()
+            result = 1
+            for j in list2:
+                if i != j:
+                    if i-j not in tmp:
+                        tmp[i-j]= 1 / (i - j)
+                        tmp[j-i]= self.group.order() - tmp[i-j]
+                    result *= (0 - j)*tmp[i-j]
+            # print("coeff '%d' => '%s'" % (i, result))
+            coeff[int(i)] = result
+            # print(len(list2), time.time()-starttime)
+            # print(type(coeff[int(i)]), self.group.order())
+        return coeff
+    
+    
+
+    def recoverCoefficients2(self, list):
         """recovers the coefficients over a binary tree."""
         coeff = {}
         list2 = [self.group.init(ZR, i) for i in list]
@@ -48,10 +70,13 @@ class SecretUtil:
             for j in list2:
                 if not (i == j):
                     # lagrange basis poly
-                    result *= (0 - j) / (i - j)
-            #                print("coeff '%d' => '%s'" % (i, result))
+                    result *= (0 - j) * self.group.init(ZR, mod_inverse(int(i-j), self.group.order()))
+            # print("coeff '%d' => '%s'" % (i, result))
             coeff[int(i)] = result
+            # print(type(coeff[int(i)]), self.group.order())
         return coeff
+
+
 
     
 def tInNrandom(t, n) :

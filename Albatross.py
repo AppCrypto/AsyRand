@@ -51,9 +51,7 @@ class PPVSS():
         dist = LDEIpr.copy()
         dist["shat"] = shat
         # dist["vs"] = vs
-        if j == 0:
-            print("Albatross dis message size: %.2fkB" % (len(str(dist))/1024.))
-        print("Albatross distribution cost %.2fs" %(time.time()- ts))
+        print("Albatross distribution cost %.2fs, size: %.2fkB" %(time.time()- ts, len(str(dist))/1024.))
         return dist
 
     def LDEI_verify(self, dist):
@@ -115,8 +113,9 @@ class PPVSS():
 
 
         w = self.group.random(ZR)
-        z, a1, a2 = [0 for i in range(0, len(self.sks))], [0 for i in range(0, len(self.sks))], [0 for i in range(0,
-                                                                                                                  len(self.sks))]
+        z, a1, a2 = [0 for i in range(0, len(self.sks))], \
+                    [0 for i in range(0, len(self.sks))], \
+                    [0 for i in range(0, len(self.sks))]
         c = self.group.hash(str(stidle) + str(dist["shat"]), ZR)
 
         for i in range(1, len(z)):
@@ -128,15 +127,14 @@ class PPVSS():
         recon = dleqPrfs.copy()
         recon["vs"] = stidle
         recon["shat"] = dist["shat"]
-        if j == 1:
-            print("Albatross rec message size: %.2fkB"%(len(str(recon))/1024.))
+        
         starttime = time.time()
         DLEQ_verification = self.dleq_verify(recon)
         assert DLEQ_verification == True
         Locol_LDEI_verification = self.local_LDEI(recon)
         assert Locol_LDEI_verification == True
         # time_cost = time.time() - starttime
-        # print("Albatross reconstruct verification cost ", time.time() - starttime)
+        # print("Albatross reconstruct verification cost %.3fs"%(time.time() - starttime))
 
         indexArr = [i for i in range(1, N + 1)]
 
@@ -148,7 +146,7 @@ class PPVSS():
             z *= stidle[i] ** y[i]
         if self.S != z:
             return -2
-        print("Albatross reconstruction cost: %.3fs "%(time.time()- starttime))
+        print("Albatross reconstruction cost: %.3fs size: %.2fkB"%(time.time()- starttime,  len(str(recon))/1024.))
         # return time_cost
 
 

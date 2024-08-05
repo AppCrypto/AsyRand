@@ -79,22 +79,28 @@ class PVSS():
 
 
     def verify(self, C, proofs):        
-        
+        starttime = time.time()
         for i in proofs["Cp"]["_C1"]:        
             if int(i) not in self.pks:
                  print(self.ID, "verify error not in self.pks========================",i)
             if (proofs["Cp"]["_C1"][i] != (self.pks[int(i)][0] ** proofs["pitidle"][i]) * (C["C1"][i] ** proofs["c"])):
                 print(self.ID, "verify error========================",i)
                 break
+        # print("pvss.verify1 with cost %.3fs"%( time.time()- starttime))
+
+        starttime = time.time()
         stidle = proofs['stidle']        
         indexArr = [i for i in range(1, self.N+1)]
         y = self.util.recoverCoefficients(indexArr)
         
+        # print("pvss.verify1.1 with cost %.3fs"%( time.time()- starttime))
+
         z = 0
         for i in proofs["pitidle"]:
             z += proofs["pitidle"][i]*y[int(i)]
     
-        assert(z == stidle) 
+        assert(z == stidle)            
+        # print("pvss.verify2 with cost %.3fs"%( time.time()- starttime))
         return True
 
     def preRecon(self, C, i, ski=None):
@@ -139,9 +145,13 @@ if __name__ == "__main__":
     
     #print(sks)
     pvss = PVSS('3')
+    starttime = time.time()
+    g1 = pvss.g ** random_scalar()
+    print("exponetiation cost %.3f"%(time.time()- starttime))
+
     # starttime = time.time()
-    # g1 = pvss.g ** random_scalar()
-    # print("exponetiation cost %.3f"%(time.time()- starttime))
+    # inv = 1/(groupObj.init(ZR, 2) - groupObj.init(ZR, 200))
+    # print("inverse() cost %.3f"%(time.time()- starttime))
     
     # g2 = pvss.g2 ** random_scalar()
     # starttime = time.time()
