@@ -11,24 +11,31 @@ t=int((N -1)/3+1)
 
 
 class SCRAPE():
-    # def dleq_distribute(self, shares):
+    # def dleq(self, g, y1, pks, y2, shares):
+    #     """ DLEQ... discrete logarithm equality
+    #     Proofs that the caller knows alpha such that y1[i] = x1[i]**alpha and y2[i] = x2[i]**alpha
+    #     without revealing alpha.
+    #     """
     #     w = self.group.random(ZR)
-    #     z=[0 for i in range(0,len(shares))]
-    #     a1=[0 for i in range(0,len(shares))]
-    #     a2=[0 for i in range(0,len(shares))]
-    #     c = self.group.hash(str(self.vs)+str(self.shat), ZR)
+    #     z=[0 for i in range(0,len(y1))]
+    #     a1=[0 for i in range(0,len(y1))]
+    #     a2=[0 for i in range(0,len(y1))]
+    #     c = self.group.hash(str(y1)+str(y2), ZR)
         
     #     for i in range(1, len(z)):
-    #         a1[i] = self.gp**w
-    #         a2[i] = self.pks[i]**w        
+    #         a1[i] = g**w
+    #         a2[i] = pks[i]**w        
     #         z[i] = w - shares[i] * c    
         
-    #     return {"c":c, "a1":a1, "a2":a2, "z":z}
+    #     return {"g":g, "y1":y1, "pks":pks, "y2":y2, "c":c, "a1":a1, "a2":a2, "z":z}
 
 
-    def dleq_verify_distribute(self, c, a1, a2, z):
-        
-        return True
+    # def dleq_verify(self, g, y1, pks, y2, c, a1, a2, z):
+    #     for i in range(1, N+1):
+    #         if a1[i] != (g**z[i]) * (y1[i]**c) or a2 !=pks** z[i] * y2[i] **c:
+    #             return False
+    #     return True
+
 
 
 
@@ -89,7 +96,7 @@ class SCRAPE():
                 return False
 
         # reed solomon check
-        
+        starttime2 = time.time()
         v=self.group.init(G1,1)
         codeword=[self.group.init(ZR,1)]
         for i in range(1, N+1):            
@@ -103,6 +110,7 @@ class SCRAPE():
         if v != self.group.init(G2,1):
             return False
         print("ScrapeDDH verification cost %.3fs"%(time.time()- starttime))
+        # print("ScrapeDDH verification.codeword cost %.3fs"%(time.time()- starttime2))
         return True
 
     def reconstruct(self, dist):

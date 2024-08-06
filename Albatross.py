@@ -74,7 +74,7 @@ class PPVSS():
         # time_cost = time.time() - starttime
         # return {"result": True, "cost": time_cost}
 
-    def local_LDEI(self,dist):
+    def local_LDEI(self,recon):
         v = self.group.init(G1, 1)
         codeword = [self.group.init(ZR, 1)]
         _p = self.util.genShares(0, t, N)
@@ -85,19 +85,19 @@ class PPVSS():
                     vi = vi * 1 / (i - j)
             codeword.append(self.group.init(ZR, vi))
         for i in range(1, N + 1):
-            v = v * (dist["vs"][i] ** codeword[i])
-            # assert dist["vs"][i] ** codeword[i] == 0
+            v = v * (recon["vs"][i] ** codeword[i])
+            # assert recon["vs"][i] ** codeword[i] == 0
         if v != self.group.init(G2, 1):
            return False
         return True
 
-    def dleq_verify(self, dist):
+    def dleq_verify(self, recon):
         starttime = time.time()
             # Check DLEQ proofs
-        c = self.group.hash(str(dist["vs"]) + str(dist["shat"]), ZR)
+        c = self.group.hash(str(recon["vs"]) + str(recon["shat"]), ZR)
         for i in range(1, N + 1):
-            if dist["a1"][i] != (self.g ** dist["z"][i]) * (self.pks[i] ** c) \
-                    or dist["a2"][i] != dist["vs"][i] ** dist["z"][i] * (dist["shat"][i] ** c):
+            if recon["a1"][i] != (self.g ** recon["z"][i]) * (self.pks[i] ** c) \
+                    or recon["a2"][i] != recon["vs"][i] ** recon["z"][i] * (recon["shat"][i] ** c):
                 return False
         return True
 
