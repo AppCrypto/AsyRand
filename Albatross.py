@@ -1,4 +1,4 @@
-from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, GT, pair
+from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, GT, pair
 from newsecretutils import SecretUtil
 import newjson as newjson
 from charm.toolbox.ABEnc import ABEnc, Input, Output
@@ -17,13 +17,19 @@ class PPVSS():
         self.util = SecretUtil(groupObj, verbose=False)
         self.group = groupObj
 
-        self.g, self.gp = self.group.random(G1), self.group.random(G2)
-        # self.g.initPP(); gp.initPP()
-
+        self.g = self.group.random(G1)
+        
         # shareholders are in [1, N]
         self.sks = [self.group.random(ZR) for i in range(0, N + 1)]
         self.pks = [self.g ** self.sks[i] for i in range(0, N + 1)]
         self.S = self.group.random(G1)
+        self.codeword = [self.group.init(ZR, 1)]
+        for i in range(1, N + 1):
+            vi = self.group.init(ZR, 1)
+            for j in range(1, N + 1):
+                if i != j:
+                    vi = vi * 1 / (i - j)
+            self.codeword.append(self.group.init(ZR, vi))
 
     def distribute(self, j):
         ts = time.time()
@@ -76,19 +82,13 @@ class PPVSS():
 
     def local_LDEI(self,recon):
         v = self.group.init(G1, 1)
-        codeword = [self.group.init(ZR, 1)]
+        
         _p = self.util.genShares(0, t, N)
+
         for i in range(1, N + 1):
-            vi = _p[i]
-            for j in range(1, N + 1):
-                if i != j:
-                    vi = vi * 1 / (i - j)
-            codeword.append(self.group.init(ZR, vi))
-        for i in range(1, N + 1):
-            v = v * (recon["vs"][i] ** codeword[i])
-            # assert recon["vs"][i] ** codeword[i] == 0
-        if v != self.group.init(G2, 1):
-           return False
+            v = v * (recon["vs"][i] ** (self.codeword[i]*_p[i]))
+        if v != self.group.init(G1, 1):
+            return False
         return True
 
     def dleq_verify(self, recon):

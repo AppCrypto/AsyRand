@@ -12,13 +12,14 @@ from config import config
 
 ID = sys.argv[1]
 
-n=len(config["nodes"])
-f=int((n -1)/3)
         
 ip = config["nodes"][ID]["ip"]
 port = config["portBase"] + int(ID)
 C_Plen = config["C_Plen"]
 CTs = None
+
+n=len(config["nodes"])
+f=int((n -1)/3)
 
 
 
@@ -81,8 +82,8 @@ def callback(event, mynode, yournode, data):
                 time.sleep(10)
                 print("Node %s producer starts"%(mynode.id))    
             
-                # sv={'C_P': json.loads(json.dumps(mynode.pvss.share(n,f+1)))}
-                sv={'C_Ps': [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)]}
+                # sv={'C_P': json.loads(json.dumps(mynode.pvss.share()))}
+                sv={'C_Ps': [json.loads(json.dumps(mynode.pvss.share())) for i in range(0, C_Plen)]}
                 sv['epoch'] = epoch
                 sv['ts'] = time.time()
                 sv['ts1'] = time.time()                     
@@ -203,8 +204,8 @@ def callback(event, mynode, yournode, data):
                         time.sleep(1)
 
                     if CTs == None:
-                        CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
-                    # CTs = [json.loads(json.dumps(mynode.pvss.share(n,f+1))) for i in range(0, C_Plen)] 
+                        CTs = [json.loads(json.dumps(mynode.pvss.share())) for i in range(0, C_Plen)] 
+                    # CTs = [json.loads(json.dumps(mynode.pvss.share())) for i in range(0, C_Plen)] 
 
                     sv={'C_Ps': CTs}        
                     sv['seq'] = "ld_%sseq_%d"%(mynode.id, mynode.seq)        

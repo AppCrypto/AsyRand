@@ -19,7 +19,11 @@ Python package p2pnet for implementing decentralized peer-to-peer network applic
 TODO: Also create events when things go wrong, like a connection with a node has failed.
 """
 
+
 from config import config
+n=len(config["nodes"])
+f=int((n -1)/3)
+
 
 class Queue:
     def __init__(self, l):
@@ -53,8 +57,6 @@ class Queue:
     def setQueue(self, lq):
         self.items = lq
 
-n=len(config["nodes"])
-f=int((len(config["nodes"]) -1)/3)
 
 class Node(threading.Thread):
     """Implements a node that is able to connect to other nodes and is able to accept connections from other nodes.
@@ -128,7 +130,7 @@ class Node(threading.Thread):
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
         self.canSendEcho={}
-        self.pvss = PVSS(self.id)
+        self.pvss = PVSS(self.id, n, f+1)
         self.msgs={}#producer
         self.seq = 1#producer
         self.L = config['L']

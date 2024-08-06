@@ -11,32 +11,7 @@ t=int((N -1)/3+1)
 
 
 class SCRAPE():
-    def dleq(self, g, y1, pks, y2, shares):
-        """ DLEQ... discrete logarithm equality
-        Proofs that the caller knows alpha such that y1[i] = x1[i]**alpha and y2[i] = x2[i]**alpha
-        without revealing alpha.
-        """
-        w = self.group.random(ZR)
-        z=[0 for i in range(0,len(y1))]
-        a1=[0 for i in range(0,len(y1))]
-        a2=[0 for i in range(0,len(y1))]
-        c = self.group.hash(str(y1)+str(y2), ZR)
-        
-        for i in range(1, len(z)):
-            a1[i] = g**w
-            a2[i] = pks[i]**w        
-            z[i] = w - shares[i] * c    
-        
-        return {"g":g, "y1":y1, "pks":pks, "y2":y2, "c":c, "a1":a1, "a2":a2, "z":z}
-
-
-    def dleq_verify(self, g, y1, pks, y2, c, a1, a2, z):
-        for i in range(1, N+1):
-            if a1[i] != (g**z[i]) * (y1[i]**c) or a2 !=pks** z[i] * y2[i] **c:
-                return False
-        return True
-
-
+    
 
     # setup()
     def __init__(self, groupObj):        
@@ -51,6 +26,13 @@ class SCRAPE():
         self.sks=[self.group.random(ZR) for i in range(0,N+1)]
         self.pks=[self.h**self.sks[i] for i in range(0,N+1)]
         self.pksp=[self.g**self.sks[i] for i in range(0,N+1)]
+        self.codeword=[self.group.init(ZR,1)]
+        for i in range(1, N+1):            
+            vi = self.group.init(ZR,1)
+            for j in range(1,N+1):
+                if i!=j:
+                    vi=vi*1/(i-j)  
+            self.codeword.append(self.group.init(ZR,vi))
 
            
     def distribute(self):
@@ -86,15 +68,9 @@ class SCRAPE():
 
         # reed solomon check        
         v=self.group.init(G1,1)
-        codeword=[self.group.init(ZR,1)]
+        
         for i in range(1, N+1):
-            vi = self.group.init(ZR,1)
-            for j in range(1,N+1):
-                if i!=j:
-                    vi=vi*1/(i-j)  
-            codeword.append(self.group.init(ZR,vi))
-        for i in range(1, N+1):
-            v=v * (dis["vs"][i]**codeword[i])
+            v=v * (dis["vs"][i]**self.codeword[i])
         if v != self.group.init(G1,1):
             return False
         print("ScrapeDBS verification cost %.3fs"%(time.time()- starttime))

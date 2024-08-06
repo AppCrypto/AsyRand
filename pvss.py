@@ -4,7 +4,6 @@ import time, sys, os
 sys.path.append('..') 
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, GT, pair
 from newsecretutils import SecretUtil
-from functools import reduce
 import newjson as json
 from charm.toolbox.ABEnc import ABEnc, Input, Output
 import random
@@ -20,7 +19,7 @@ def random_scalar():
 
 class PVSS():
 
-    def __init__(self, ID):
+    def __init__(self, ID, N, t):
         self.util = SecretUtil(groupObj, verbose=False)
         self.group = groupObj
         self.g, self.h = json.loads(config['g']), json.loads(config['h'])#self.group.random(G1),self.group.random(G1)
@@ -31,8 +30,10 @@ class PVSS():
         self.sk=random_scalar()
         self.pk=[self.g ** self.sk, self.g2**self.sk]
         self.pks={int(ID):self.pk}
-        self.N=0
-        self.t=0
+        self.N=N
+        self.t=t
+        self.coeff = self.util.recoverCoefficients([i for i in range(1, N+1)])
+        
 
     def setPK(self, i, pk):
         self.pks[i]=pk
@@ -41,9 +42,7 @@ class PVSS():
         return self.group.hash(str(obj), ZR)
 
     # PVSS——share
-    def share(self,  N, t, s=None):
-        self.N=N
-        self.t=t
+    def share(self, s=None):
         ts = time.time()
 
         if s == None:
@@ -91,13 +90,13 @@ class PVSS():
         starttime = time.time()
         stidle = proofs['stidle']        
         indexArr = [i for i in range(1, self.N+1)]
-        y = self.util.recoverCoefficients(indexArr)
+        # y = self.util.recoverCoefficients(indexArr)
         
         # print("pvss.verify1.1 with cost %.3fs"%( time.time()- starttime))
 
         z = 0
         for i in proofs["pitidle"]:
-            z += proofs["pitidle"][i]*y[int(i)]
+            z += proofs["pitidle"][i]*self.coeff[int(i)]
     
         assert(z == stidle)            
         # print("pvss.verify2 with cost %.3fs"%( time.time()- starttime))
