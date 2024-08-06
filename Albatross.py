@@ -28,9 +28,10 @@ class PPVSS():
             vi = self.group.init(ZR, 1)
             for j in range(1, N + 1):
                 if i != j:
-                    vi = vi * 1 / (i - j)
-            self.codeword.append(self.group.init(ZR, vi))
-
+                    vi=vi*1/(self.group.init(ZR, i)-j)  
+                    # print(vi,i,j)
+            self.codeword.append(vi)
+        # print(self.codeword)
     def distribute(self, j):
         ts = time.time()
         s = self.group.random(ZR)

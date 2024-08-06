@@ -133,8 +133,7 @@ class PVSS():
 
 
 
-if __name__ == "__main__":
-    
+if __name__ == "__main__":    
     
     N = len(config['nodes'])
     if len(sys.argv)>1:
@@ -143,7 +142,7 @@ if __name__ == "__main__":
     sks={i: random_scalar() for i in range(0, N+1)}
     
     #print(sks)
-    pvss = PVSS('3')
+    pvss = PVSS('3',N,t)
     starttime = time.time()
     g1 = pvss.g ** random_scalar()
     print("exponetiation cost %.3f"%(time.time()- starttime))
@@ -163,7 +162,7 @@ if __name__ == "__main__":
     s = groupObj.random(ZR)
     # s= groupObj.init(ZR, 1)
     starttime = time.time()
-    dist = pvss.share(N,t,s)
+    dist = pvss.share(s)
     print("pvss.share with cost %.3fs, size: %.2fkB"%(time.time()- starttime, len(str(dist))/1024.))
     # print("dis message size:",len(str(trans)))
     #print(dist["pi"])    

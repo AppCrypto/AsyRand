@@ -63,3 +63,7 @@ pair_exp = time_test(groupObj)
 print("curveName", curveName)
 test = pair_exp.time_cost()
 
+p=groupObj.random(G1)
+z=groupObj.random(ZR)
+print(f"MNT159 point size:{len(str(p))}, z sie:{len(str(z))}")
+
