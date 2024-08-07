@@ -86,7 +86,7 @@ def callback(event, mynode, yournode, data):
                 sv={'C_Ps': [json.loads(json.dumps(mynode.pvss.share())) for i in range(0, C_Plen)]}
                 sv['epoch'] = epoch
                 sv['ts'] = time.time()
-                sv['ts1'] = time.time()                     
+                # sv['ts1'] = time.time()                     
                 sv['seq'] = "ld_%sseq_%d"%(mynode.id,mynode.seq)       
                 # mynode.msgs[sentProducer] = True
                 hC_Ps = mynode.pvss.hash(sv['C_Ps'])                                
@@ -122,7 +122,7 @@ def callback(event, mynode, yournode, data):
             sv['epoch'] = epoch
             sv['seq'] = seq   
             sv['ts'] = rv['ts']
-            sv['ts1'] = time.time()
+            # sv['ts1'] = time.time()
             seqStart = int(seq.split("seq_")[1])
             # time.sleep(0.2)
             if mynode.sendingCnt > 0:
@@ -149,7 +149,7 @@ def callback(event, mynode, yournode, data):
             sv['epoch'] = epoch
             sv['seq'] = seq            
             sv['ts'] = rv['ts']
-            sv['ts1'] = rv['ts1']
+            # sv['ts1'] = rv['ts1']
             
             # print(mynode.id, "recieve echo from",yourid, seq, rv['hC_Ps'],len(mynode.msgs["echo"][seq]))
             if len(mynode.msgs["echo"][seqistr]) > 2*f or (seqistr in mynode.msgs["ready"] and len(mynode.msgs["ready"][seqistr]) > f):                
@@ -157,7 +157,7 @@ def callback(event, mynode, yournode, data):
                      mynode.msgs[sentProducer] = True
                 else:
                     return                
-                sv['ts2'] = time.time() 
+                # sv['ts2'] = time.time() 
                 # time.sleep(0.2) 
                 if mynode.sendingCnt > 0: 
                     time.sleep(mynode.sendingCnt / 500)         
@@ -194,8 +194,8 @@ def callback(event, mynode, yournode, data):
                     return
 
                 ts = time.time()
-                print("%s (%s/%s) consensus on %s, initial time: %.2f, echo time: %.2f, ready time: %.2f sendingCnt:%s"%\
-                    ( mynode.id, mynode.curSeq[int(mynode.id)], mynode.seq, seq, ts-rv['ts'],  ts-rv['ts1'],  ts-rv['ts2'] ,mynode.sendingCnt) )
+                print("%s (%s/%s) consensus on %s, initial time: %.2f, sendingCnt:%s"%\
+                    ( mynode.id, mynode.curSeq[int(mynode.id)], mynode.seq, seq, ts-rv['ts'] ,mynode.sendingCnt) )
                 # time.sleep(100)
                 # print(seq, seqistr, mynode.msgs[tp][seqistr])
                 if seq.startswith("ld_%sseq_"%(mynode.id)):
@@ -211,7 +211,7 @@ def callback(event, mynode, yournode, data):
                     sv['seq'] = "ld_%sseq_%d"%(mynode.id, mynode.seq)        
                     sv['epoch'] = epoch
                     sv['ts'] = time.time()
-                    sv['ts1'] = time.time()
+                    # sv['ts1'] = time.time()
                     hC_Ps = mynode.pvss.hash(sv['C_Ps'])
                     for i in range(0, C_Plen):
                         seqi = mynode.seq +i                    
@@ -265,8 +265,8 @@ def callback(event, mynode, yournode, data):
                 sv['LQ']=rv['LQ']
                 sv['Re_1'] = rv['Re_1']
                 sv['ts'] = rv['ts']
-                sv['ts1'] = rv['ts1']
-                sv['ts2'] = time.time()
+                # sv['ts1'] = rv['ts1']
+                # sv['ts2'] = time.time()
                 # time.sleep(0.05)
                 if epoch not in mynode.cis["reconEcho"]:
                     mynode.cis["reconEcho"][epoch]={}
@@ -306,9 +306,9 @@ def callback(event, mynode, yournode, data):
                 sv['Re_1'] = rv['Re_1']      
                 sv['LQ'] = rv['LQ']
                 sv['ts'] = rv['ts']
-                sv['ts1'] = rv['ts1']
-                sv['ts2'] = rv['ts2']
-                sv['ts3'] = time.time()
+                # sv['ts1'] = rv['ts1']
+                # sv['ts2'] = rv['ts2']
+                # sv['ts3'] = time.time()
                 
                 if epoch not in mynode.cis["reconReady"]:
                     mynode.cis["reconReady"][epoch]={}
@@ -359,7 +359,7 @@ def callback(event, mynode, yournode, data):
                 # endtime = time.time()
                 
                 printStr = "%s(%s/%s) epoch:%s"% (mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch)
-                printStr = printStr+ " Leader%s->%s %s, value: %s %.2fs/beacon %.2fs %.2fs %.2fs per sendingCnt:%s "% (L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/mynode.epoch, time.time()-rv['ts1'],time.time()-rv['ts2'],time.time()-rv['ts3'], mynode.sendingCnt)
+                printStr = printStr+ " Leader%s->%s %s, value: %s %.2fs/beacon per sendingCnt:%s "% (L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/mynode.epoch, mynode.sendingCnt)
                 printStr = printStr+ " producer SEND:%.2f"%(mynode.producerSentSize/(mynode.epoch+(n*config["C_Ptimes"]))/1024.)
                 printStr = printStr+ " producer RCV:%.2f"%(mynode.producerRecvSize/(mynode.epoch+(n*config["C_Ptimes"]))/1024.)
                 printStr = printStr+ " consumer SEND:%.2f"%(mynode.consumerSentSize/mynode.epoch/1024.)
@@ -456,7 +456,7 @@ class Peer(threading.Thread):
                 sv['seq'] = seq
                 sv['Re_1'] = node.Re_1
                 sv['ts'] = starttime
-                sv['ts1'] = time.time()
+                # sv['ts1'] = time.time()
                 # print("%s start to consume %d's %dth ciphertext %s cost:%s"%(node.id, node.newL, node.curSeq[node.newL], int(node.pvss.hash(EC))%100000, time.time()-starttime))  
                 if sv['epoch'] not in node.cis['recon']:
                     node.cis['recon'][sv['epoch']] = {}
