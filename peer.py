@@ -12,7 +12,12 @@ from config import config
 
 ID = sys.argv[1]
 
-        
+RED = "\033[31m"
+GREEN = "\033[32m"
+BLUE = "\033[34m"
+WHITE = "\033[37m"
+RESET = "\033[0m"
+
 ip = config["nodes"][ID]["ip"]
 port = config["portBase"] + int(ID)
 C_Plen = config["C_Plen"]
@@ -37,43 +42,39 @@ def callback(event, mynode, yournode, data):
         sentConsumer = "sent_%s_%s"%(tp, epoch)
         
         
+        if tp in ["pks", "initial","echo", "ready"]:
+            mynode.producerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
+            if sentProducer not in mynode.msgs:
+                mynode.msgs[sentProducer] = False
+        elif tp in ["recon", "reconEcho", "reconReady"]:
+            mynode.consumerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
+            if sentConsumer not in mynode.cis:
+                mynode.cis[sentConsumer] = False
+
 
         for tpi in ["pks", "initial","echo", "ready"]:
-        
             if tpi not in mynode.msgs:
                 mynode.msgs[tpi]={}     
 
             if seq not in mynode.msgs[tpi]:
                 mynode.msgs[tpi][seq] = {}           
             
-            if sentProducer not in mynode.msgs:
-                mynode.msgs[sentProducer] = False
-
+            
             seqStart = int(seq.split("seq_")[1])        
-
-        if tp in ["pks", "initial","echo", "ready"]:            
-            if tp!="pks":
-                mynode.producerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
-
             leaderID = seq.split("ld_")[1].split("seq_")[0]
             for i in range(0, C_Plen):
                 seqistr = 'ld_%sseq_%d'%(leaderID, seqStart + i )      
-                if seqistr not in mynode.msgs[tp]:
-                    mynode.msgs[tp][seqistr]={}
+                if seqistr not in mynode.msgs[tpi]:
+                    mynode.msgs[tpi][seqistr]={}
 
-        if tp in ["recon", "reconEcho", "reconReady"]:
-            mynode.consumerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
-            # print(tp, len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))  )
-
+        
         for tpi in ["recon", "reconEcho", "reconReady"]:
             if tpi not in mynode.cis:
                 mynode.cis[tpi]={}
             if epoch not in mynode.cis[tpi]:
                 mynode.cis[tpi][epoch]={}
-
-            if sentConsumer not in mynode.cis:
-                mynode.cis[sentConsumer] = False
-
+        
+            
         
         if tp == "pks":
             mynode.pvss.setPK(int(yourid), rv['pk'])
@@ -194,8 +195,8 @@ def callback(event, mynode, yournode, data):
                     return
 
                 ts = time.time()
-                print("%s (%s/%s) consensus on %s, initial time: %.2f, sendingCnt:%s"%\
-                    ( mynode.id, mynode.curSeq[int(mynode.id)], mynode.seq, seq, ts-rv['ts'] ,mynode.sendingCnt) )
+                print(f"%s (%s/%s) consensus on %s, {WHITE}%.2f{RESET}/PVSS commitment"%\
+                    ( mynode.id, mynode.curSeq[int(mynode.id)], mynode.seq, seq, ts-rv['ts']) )
                 # time.sleep(100)
                 # print(seq, seqistr, mynode.msgs[tp][seqistr])
                 if seq.startswith("ld_%sseq_"%(mynode.id)):
@@ -256,6 +257,7 @@ def callback(event, mynode, yournode, data):
                 gs = mynode.pvss.recon(C, cis)
                 
                 beaconV = int(mynode.pvss.hash(str(Re_1)+str(gs)))
+                # beaconV = hash(str(Re_1)+str(gs))
 
                 sv = {"beaconV":beaconV}            
                 sv['epoch'] = epoch                
@@ -355,15 +357,22 @@ def callback(event, mynode, yournode, data):
                     if j in mynode.CL:
                         del mynode.CL[j]
                 keys = list(mynode.CL.keys())
-                newL = keys[int(beaconV) % len(mynode.CL)]
+                # print(keys, int(beaconV) % len(keys))
+                newL = keys[int(beaconV) % len(keys)]
                 # endtime = time.time()
+                # print(" Leaders sendingCnt %s"%,mynode.sendingCnt)
                 
-                printStr = "%s(%s/%s) epoch:%s"% (mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch)
-                printStr = printStr+ " Leader%s->%s %s, value: %s %.2fs/beacon per sendingCnt:%s "% (L, newL, seq, beaconV%100000,(time.time()-rv['ts'])/mynode.epoch, mynode.sendingCnt)
-                printStr = printStr+ " producer SEND:%.2f"%(mynode.producerSentSize/(mynode.epoch+(n*config["C_Ptimes"]))/1024.)
-                printStr = printStr+ " producer RCV:%.2f"%(mynode.producerRecvSize/(mynode.epoch+(n*config["C_Ptimes"]))/1024.)
-                printStr = printStr+ " consumer SEND:%.2f"%(mynode.consumerSentSize/mynode.epoch/1024.)
-                printStr = printStr+ " consumer RCV:%.2f"%(mynode.consumerRecvSize/mynode.epoch/1024.)
+                proSendSize=mynode.producerSentSize
+                proRcvSize=mynode.producerRecvSize
+                conSendSize=mynode.consumerSentSize
+                conRcvSize=mynode.consumerRecvSize
+                printStr = "%s(%s/%s) epoch:%s"% (mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch)                
+                printStr = printStr+ f" Leader%s->%s %s, value: ***%s {RED}%.2fs{RESET}/beacon {BLUE}%2.fkB{RESET}/beacon"% (L, newL,seq,\
+                    beaconV%100000,(time.time()-rv['ts'])/mynode.epoch, (proSendSize+proRcvSize+conSendSize+conRcvSize)/mynode.epoch/1024.)
+                # printStr = printStr+ " producer SEND:%.2f"%(proSendSize)
+                # printStr = printStr+ " producer RCV:%.2f"%(proRcvSize)
+                # printStr = printStr+ " consumer SEND:%.2f"%(conSendSize)
+                # printStr = printStr+ " consumer RCV:%.2f"%(conRcvSize)
                 
                 
                 print(printStr)
@@ -372,6 +381,32 @@ def callback(event, mynode, yournode, data):
                 mynode.epoch=rv['newepoch']
                 mynode.L=L
                 mynode.newL = newL
+
+                # print(seq)
+                seqStart = int(seq.split("seq_")[1])        
+                leaderID = seq.split("ld_")[1].split("seq_")[0]
+                for tpi in ["initial","echo", "ready"]:
+                    for j in range(10,20):
+                        seqistr = 'ld_%sseq_%d'%(leaderID, seqStart-j)      
+                        if seqistr in mynode.msgs[tpi]:
+                            del mynode.msgs[tpi][seqistr]                    
+                        
+                        sentConsumer2 = "sent_%s_%s"%(tpi, seqStart-j)
+                        if sentConsumer2 in mynode.cis:
+                            del mynode.cis[sentConsumer2]
+
+                for tpi in ["recon", "reconEcho", "reconReady"]:
+                    for j in range(10,20):
+                        seqistr = 'ld_%sseq_%d'%(leaderID, seqStart-j)      
+                        
+                        if seqStart-j in mynode.cis[tpi]:
+                            del mynode.cis[tpi][seqStart-j]  
+                                                  
+                        sentProducer2 = "sent_%s_%s"%(tpi, seqistr)
+                        if sentProducer2 in mynode.msgs:
+                            del mynode.msgs[sentProducer2]
+
+                        
             
 class Peer(threading.Thread):
     def __init__(self, ID):

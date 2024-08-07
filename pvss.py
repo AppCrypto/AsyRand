@@ -10,6 +10,13 @@ import random
 # import setting
 # import utils.newjson as json
 
+import hashlib
+
+# # 定义字符串
+# my_string = "Hello, World!"
+
+
+
 
 groupObj = PairingGroup("MNT159")
 from config import config
@@ -39,7 +46,11 @@ class PVSS():
         self.pks[i]=pk
 
     def hash(self,obj):
-        return self.group.hash(str(obj), ZR)
+        sha256_hash = hashlib.sha256()
+        sha256_hash.update(str(obj).encode('utf-8'))
+        sha256_hashed_value = sha256_hash.hexdigest()
+        return self.group.init(ZR, int(sha256_hashed_value, 16))
+        # return self.group.hash(str(obj), ZR)
 
     # PVSS——share
     def share(self, s=None):
