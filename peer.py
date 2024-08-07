@@ -249,7 +249,7 @@ def callback(event, mynode, yournode, data):
                      mynode.cis[sentConsumer] = True
                 else:
                     return
-                time.sleep(0.05) 
+                # time.sleep(0.05) 
                 C=mynode.msgs["initial"][seq][str(L)]['C']
                 starttime = time.time()
                 cis=mynode.cis[tp][epoch].copy()
@@ -297,7 +297,7 @@ def callback(event, mynode, yournode, data):
                      mynode.cis[sentConsumer] = True
                 else:
                     return         
-                time.sleep(0.05)                
+                # time.sleep(0.05)                
                 sv = {"beaconV":rv['beaconV']}
                 sv['epoch'] = epoch
                 sv['seq'] = seq            
@@ -341,7 +341,7 @@ def callback(event, mynode, yournode, data):
                     print("node%s reconReady-------------------------------------------------------mynode.epoch >= rv['newepoch']"%(mynode.id))
                     return
             
-                time.sleep(0.05) 
+                # time.sleep(0.05) 
                 beaconV = rv['beaconV']
                 L = rv['L']                
                 Re_1 = rv['Re_1']
