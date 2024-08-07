@@ -101,10 +101,8 @@ class Node(threading.Thread):
 
         # A list of nodes that should be reconnected to whenever the connection was lost
         self.reconnect_to_nodes = []
-        self.NodesMessage = dict()#收集节点收到的消息
         
-        self.NodesEchoList = dict()#收集节点收到的Echo消息
-        self.NodesReadyList = dict()#收集节点收到的Ready消息
+        
 
         # Create a unique ID for each node if the ID is not given.
         if id == None:
@@ -129,7 +127,6 @@ class Node(threading.Thread):
         self.debug = False
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-        self.canSendEcho={}
         self.pvss = PVSS(self.id, n, f+1)
         self.msgs={}#producer
         self.seq = 1#producer

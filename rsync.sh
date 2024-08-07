@@ -1,1 +1,0 @@
-rsync -avz -e "ssh -i BeaconTest_California.pem" ./ ubuntu@ec2-54-183-129-12.us-west-1.compute.amazonaws.com:~/beacon/

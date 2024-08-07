@@ -244,7 +244,7 @@ def callback(event, mynode, yournode, data):
             # print(mynode.id, tp, epoch, len(mynode.cis[tp][epoch]))
             if len(mynode.cis[tp][epoch]) > f:
                 if str(L) not in mynode.msgs["initial"][seq]:
-                    print("node %s str(L) not in mynode.msgs['initial'][seq]"%(mynode.id))
+                    print(f"for node {mynode.id}, leader {str(L)} not in mynode.msgs['initial'][{seq}]")
                     return
                 if not mynode.cis[sentConsumer]:
                      mynode.cis[sentConsumer] = True
@@ -383,28 +383,36 @@ def callback(event, mynode, yournode, data):
                 mynode.newL = newL
 
                 # print(seq)
-                seqStart = int(seq.split("seq_")[1])        
-                leaderID = seq.split("ld_")[1].split("seq_")[0]
-                for tpi in ["initial","echo", "ready"]:
-                    for j in range(10,20):
-                        seqistr = 'ld_%sseq_%d'%(leaderID, seqStart-j)      
-                        if seqistr in mynode.msgs[tpi]:
-                            del mynode.msgs[tpi][seqistr]                    
-                        
-                        sentConsumer2 = "sent_%s_%s"%(tpi, seqStart-j)
-                        if sentConsumer2 in mynode.cis:
-                            del mynode.cis[sentConsumer2]
+                # leaderSeq = int(seq.split("seq_")[1])        
+                leaderID = mynode.L
+                leaderSeq=mynode.curSeq[leaderID]
+                
+                # #These temporary data can be removed from memory in practice
+                # for tpi in ["initial","echo", "ready"]:
+                #     for j in range(100,200):
+                #         seqistr = 'ld_%sseq_%d'%(leaderID, leaderSeq-j)      
+                #         if seqistr in mynode.msgs[tpi]:
+                #             del mynode.msgs[tpi][seqistr]                    
+                #         if seqistr in mynode.msgs["initial"]:
+                #             del mynode.msgs["initial"][seqistr]
+                #         if seqistr in mynode.msgs["echo"]:
+                #             del mynode.msgs["echo"][seqistr]
+                #         if seqistr in mynode.msgs["ready"]:
+                #             del mynode.msgs["ready"][seqistr]
+                #         sentConsumer2 = "sent_%s_%s"%(tpi, leaderSeq-j)
+                #         if sentConsumer2 in mynode.cis:
+                #             del mynode.cis[sentConsumer2]
 
-                for tpi in ["recon", "reconEcho", "reconReady"]:
-                    for j in range(10,20):
-                        seqistr = 'ld_%sseq_%d'%(leaderID, seqStart-j)      
+                # for tpi in ["recon", "reconEcho", "reconReady"]:
+                #     for j in range(100,200):
+                #         seqistr = 'ld_%sseq_%d'%(leaderID, leaderSeq-j)      
                         
-                        if seqStart-j in mynode.cis[tpi]:
-                            del mynode.cis[tpi][seqStart-j]  
+                #         if leaderSeq-j in mynode.cis[tpi]:
+                #             del mynode.cis[tpi][leaderSeq-j]  
                                                   
-                        sentProducer2 = "sent_%s_%s"%(tpi, seqistr)
-                        if sentProducer2 in mynode.msgs:
-                            del mynode.msgs[sentProducer2]
+                #         sentProducer2 = "sent_%s_%s"%(tpi, seqistr)
+                #         if sentProducer2 in mynode.msgs:
+                #             del mynode.msgs[sentProducer2]
 
                         
             
