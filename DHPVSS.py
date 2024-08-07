@@ -56,7 +56,7 @@ class DHPVSS():
         C.extend([(self.pks[i] ** self.sks[self.index]) * A[i] for i in range(1, N+1)])
         
         # mstar=self.group.init(ZR, 1)      #todo
-        coeffs = [self.group.hash(str(self.pks)+str(C), ZR) for i in range(1, N-t-1)]
+        coeffs = [self.group.hash(str(self.pks)+str(C)+str(i), ZR) for i in range(1, N-t-1)]
 
         V=self.group.init(G1, 1)
         U=self.group.init(G1, 1)
@@ -77,7 +77,7 @@ class DHPVSS():
     def verify(self,dist):
         starttime = time.time()
         mstar=self.group.init(ZR, 1)      #todo
-        coeffs = [self.group.hash(str(self.pks)+str(dist["C"]), ZR) for i in range(1, N-t-1)]
+        coeffs = [self.group.hash(str(self.pks)+str(dist["C"])+str(i), ZR) for i in range(1, N-t-1)]
         V=self.group.init(G1, 1)
         U=self.group.init(G1, 1)
         for i in range(1,  N+1):
