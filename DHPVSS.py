@@ -10,18 +10,7 @@ N = int(sys.argv[1])
 t=int((N -1)/3+1)
 
 class DHPVSS():
-    def ElGamal(self, M, pk):
-        r=self.group.random(ZR)
-        return (self.g**r, M * (pk**r))
-    def prove(self, w, x, f, pk):
-        
-        r=self.group.random(G1)
-        a=self.ElGamal(r,pk)
-        e=self.hash((x,a))
-        # print(type(r))
-        z=(a[0]*x[0], a[1]*x[1])
-        return (e,z)
-
+    
     def hash(self,obj):
         return self.group.hash(str(obj), ZR)
 
@@ -70,7 +59,7 @@ class DHPVSS():
         c = self.group.hash(str(U)+str(V), ZR)        
         z,a1,a2=self.g**w, U**w, w - self.sks[self.index] * c  
         PfSh=[z, a1, a2]
-        dist={"C":C,"A":A,"PfSh":PfSh}
+        dist={"C":C,"PfSh":PfSh}
         print("DHPVSS distribute cost %.3fs, size %.2fkB"%(time.time()- starttime, len(str(dist))/1024.))
         return dist
 
