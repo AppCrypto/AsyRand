@@ -34,26 +34,36 @@ class DHPVSS():
             self.codeword.append(vi)
         # print(self.codeword)
         self.index=1
+        self.alphas=[self.group.random(ZR) for i in range(0,N+1)]
+
+    def evaluate_polynomial(self, coefficients, x):
+        result = 0
+        for i, coeff in enumerate(reversed(coefficients)):
+            result += coeff * (x ** i)
+        return result
 
     def distribute(self):
         starttime = time.time()
         s=self.group.random(ZR)        
         self.S=self.g**s
         
+        
         shares = self.util.genShares(s, t, N)
-        # print(s,shares,len(shares))
         A=[0]
         A.extend([self.g ** shares[i] for i in range(1, N+1)])
         # print(shat)
         C=[0]
         C.extend([(self.pks[i] ** self.sks[self.index]) * A[i] for i in range(1, N+1)])
         
-        mstar=self.group.init(ZR, 1)      #todo
+        # mstar=self.group.init(ZR, 1)      #todo
+        coeffs = [self.group.hash(str(self.pks)+str(C), ZR) for i in range(1, N-t-1)]
+
         V=self.group.init(G1, 1)
         U=self.group.init(G1, 1)
-        for i in range(1,  N+1):
-            V = V* (C[i]**self.codeword[i])
-            U = U* (self.pks[i]**self.codeword[i])
+        for i in range(1,  N+1):            
+            mstar= self.evaluate_polynomial(coeffs, self.group.init(ZR, i))
+            V = V* (C[i]**(mstar*self.codeword[i]))
+            U = U* (self.pks[i]**(mstar*self.codeword[i]))
         
         w = self.group.random(ZR)        
         c = self.group.hash(str(U)+str(V), ZR)        
@@ -67,12 +77,14 @@ class DHPVSS():
     def verify(self,dist):
         starttime = time.time()
         mstar=self.group.init(ZR, 1)      #todo
+        coeffs = [self.group.hash(str(self.pks)+str(dist["C"]), ZR) for i in range(1, N-t-1)]
         V=self.group.init(G1, 1)
         U=self.group.init(G1, 1)
         for i in range(1,  N+1):
-            V = V* (dist["C"][i]**self.codeword[i])
-            U = U* (self.pks[i]**self.codeword[i])
-
+            mstar= self.evaluate_polynomial(coeffs, self.group.init(ZR, i))
+            V = V* (dist["C"][i]**(mstar*self.codeword[i]))
+            U = U* (self.pks[i]**(mstar*self.codeword[i]))
+        
         # Check DLEQ proofs
         c = self.group.hash(str(U)+str(V), ZR)       
         
