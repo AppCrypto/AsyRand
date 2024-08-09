@@ -124,6 +124,7 @@ class NodeConnection(threading.Thread):
            is closed. Compression can be enabled by using zlib, bzip2 or lzma. When enabled the data is compressed and send to
            the client. This could reduce the network bandwith when sending large data chunks.
            """
+        # print(f"{self.id} send {data}")
         if isinstance(data, str):
             try:
                 if compression == 'none':

@@ -37,13 +37,22 @@ class PVSS():
         self.sk=random_scalar()
         self.pk=[self.g ** self.sk, self.g2**self.sk]
         self.pks={int(ID):self.pk}
+        # a={}
+        # for i in range(1,129):
+        #     sk=random_scalar()   
+        #     a[str(i)]={"sk":sk,"pk":[self.g ** sk, self.g2**sk]}
+        # open("keys.txt","w").write(json.dumps(a))
         self.N=N
         self.t=t
         self.coeff = self.util.recoverCoefficients([i for i in range(1, N+1)])
         
 
-    def setPK(self, i, pk):
+    def setPK(self, i, pk):        
         self.pks[i]=pk
+
+    def setKey(self, key):
+        self.pk=key['pk']
+        self.sk=key['sk']
 
     def hash(self,obj):
         sha256_hash = hashlib.sha256()
@@ -121,17 +130,19 @@ class PVSS():
         # assert(pair(ci, self.pks[int(i)]) == pair(self.g2, C["C1"][i]))
         return ci
 
-    # def testPreRecon(self, C, i, ci):
-    
-    def recon(self, C, cis):
+    def vrfRecon(self, C1i, i, cisi):
+        if pair(cisi, self.pks[int(i)][1]) == pair(self.g2, C1i):    
+            return True        
+        print("bad decrypted key",i, cisi,C1i)
+        return False
+    def recon(self, C, cis, check=True):
         # print(cis)
         mycis= {}
-        for i in cis:
-            
-            if pair(cis[i], self.pks[int(i)][1]) == pair(self.g2, C["C1"][i]):
-                mycis[i] = cis[i]
-            else:
-                print("recon error=========================================================",i, cis[i],C["C1"][i],self.g2)
+        if check:
+            for i in cis:     
+                if self.vrfRecon(C["C1"][i], i, cis[i]):
+                # if pair(cis[i], self.pks[int(i)][1]) == pair(self.g2, C["C1"][i]):
+                    mycis[i] = cis[i]                
 
         mui=self.util.recoverCoefficients([int(i) for i in list(mycis.keys())])
 
@@ -194,7 +205,7 @@ if __name__ == "__main__":
         # print(len(str(cis[i])))
 
     starttime = time.time()    
-    gs = pvss.recon(dist["C"], cis)    
+    gs = pvss.recon(dist["C"], cis, True)    
     print("pvss.reconstruct with cost %.3fs, size: %.2fkB"%(time.time()- starttime, len(str(cis))/1024.))
     
     

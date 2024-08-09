@@ -128,8 +128,9 @@ class Node(threading.Thread):
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
         self.pvss = PVSS(self.id, n, f+1)
-        self.msgs={}#producer
+        self.msgs={"pks":{}, "initial":{},"echo":{},"ready":{}}#producer
         self.seq = 1#producer
+        self.sentTP={}
         self.L = config['L']
         self.newL = self.L
 
@@ -153,6 +154,7 @@ class Node(threading.Thread):
 
         self.producerSentSize=0
         self.consumerSentSize=0
+        self.starttime=time.time()
 
     @property
 
@@ -196,6 +198,7 @@ class Node(threading.Thread):
         self.sendingCnt += len(self.nodes_inbound)
         self.sendingCnt += len(self.nodes_outbound)
         
+        
         # if data["type"] not in [""]:
         #     datalen= len(str(data))
         #     print("node:%s type:%s datalen:%d sendingCnt:%d"%(self.id, data["type"], datalen, self.sendingCnt))
@@ -225,6 +228,7 @@ class Node(threading.Thread):
                 self.producerSentSize += len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
             elif data["type"] in ["recon", "reconEcho", "reconReady"]:
                 self.consumerSentSize += len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
+            # print(f"sending to {n} with data {data}")
             n.send(data, compression=compression)
 
         else:

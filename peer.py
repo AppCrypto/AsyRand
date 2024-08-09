@@ -26,324 +26,214 @@ CTs = None
 n=len(config["nodes"])
 f=int((n -1)/3)
 
+def init_dict(d, *keys):
+    if len(keys) < 2:
+        return
+    for key in keys[:-2]:
+        key=str(key)
+        if key not in d:
+            d[key] = {}
+        d = d[key]
+    key2=str(keys[-2])
+    d[key2] = keys[-1]
+
+def get_value(d, *keys):
+    current = d
+    for key in keys:
+        key = str(key)
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+        else:
+            return None  
+    return current
+
+def get_value2(d, *keys):
+    res= get_value(d,*keys) 
+    if res == None:
+        res = {}
+    return res
+
+def myprint(str):
+    print(str)
+    with open('log.txt', 'a') as f:
+        print(str, file=f)
+
 
 
 def callback(event, mynode, yournode, data):
-    global CTs
+    # global CTs
+    thread_id = threading.get_ident()    
     if event == "node_message":        
-        # print(data.length)
+        # print(data)
         tp = data['type']
         rv = json.loads(data['v'])
-        epoch = rv['epoch']        
-        seq = rv['seq']
         yourid = yournode.id
-        # print("node:%s recieve type:%s from node:%s"%(mynode.id, tp, yournode.id), seq, epoch)
-        sentProducer = "sent_%s_%s"%(tp, seq)
-        sentConsumer = "sent_%s_%s"%(tp, epoch)
+
         
+
         
-        if tp in ["pks", "initial","echo", "ready"]:
+        log=f"{mynode.id}-{yourid} thread {thread_id} start {tp}-"
+        
+        if tp in ["initial","echo", "ready"]:
             mynode.producerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
-            if sentProducer not in mynode.msgs:
-                mynode.msgs[sentProducer] = False
+            # TODO
+            # if mynode.curSeq[int(mynode.id)] >= rv['seqs'][0] + 10:
+            #     print(f"node{mynode.id} {tp}-------------------------------------------------------{mynode.epoch} >= {rv['newepoch']}")
+            #     return
+            log+=str(rv['seqs'])
+            for seq in rv['seqs']:   
+                if get_value(mynode.sentTP,tp,rv['ld'],seq) == None:
+                    init_dict(mynode.sentTP,tp,rv['ld'],seq,False)                
+                
         elif tp in ["recon", "reconEcho", "reconReady"]:
             mynode.consumerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
-            if sentConsumer not in mynode.cis:
-                mynode.cis[sentConsumer] = False
-
-
-        for tpi in ["pks", "initial","echo", "ready"]:
-            if tpi not in mynode.msgs:
-                mynode.msgs[tpi]={}     
-
-            if seq not in mynode.msgs[tpi]:
-                mynode.msgs[tpi][seq] = {}           
-            
-            
-            seqStart = int(seq.split("seq_")[1])        
-            leaderID = seq.split("ld_")[1].split("seq_")[0]
-            for i in range(0, C_Plen):
-                seqistr = 'ld_%sseq_%d'%(leaderID, seqStart + i )      
-                if seqistr not in mynode.msgs[tpi]:
-                    mynode.msgs[tpi][seqistr]={}
-
+            # TODO TEST
+            # if mynode.epoch >= rv['newepoch']:
+            #     print(f"node{mynode.id} {tp}-------------------------------------------------------{mynode.epoch} >= {rv['newepoch']}")
+            #     return
         
-        for tpi in ["recon", "reconEcho", "reconReady"]:
-            if tpi not in mynode.cis:
-                mynode.cis[tpi]={}
-            if epoch not in mynode.cis[tpi]:
-                mynode.cis[tpi][epoch]={}
-        
-            
-        
-        if tp == "pks":
-            mynode.pvss.setPK(int(yourid), rv['pk'])
-            # print("node:%s's pks length:%d"%(mynode.id, len(mynode.pvss.pks)))
-            if len(mynode.pvss.pks) == len(config['nodes']):                      
-                time.sleep(10)
-                print("Node %s producer starts"%(mynode.id))    
-            
-                # sv={'C_P': json.loads(json.dumps(mynode.pvss.share()))}
-                sv={'C_Ps': [json.loads(json.dumps(mynode.pvss.share())) for i in range(0, C_Plen)]}
-                sv['epoch'] = epoch
-                sv['ts'] = time.time()
-                # sv['ts1'] = time.time()                     
-                sv['seq'] = "ld_%sseq_%d"%(mynode.id,mynode.seq)       
-                # mynode.msgs[sentProducer] = True
-                hC_Ps = mynode.pvss.hash(sv['C_Ps'])                                
-                for i in range(0, C_Plen):
-                    seqi = mynode.seq+i                    
-                    seqistr = 'ld_%sseq_%d'%(mynode.id,seqi)
-                    if seqistr not in mynode.msgs["initial"]:
-                        mynode.msgs["initial"][seqistr]={}
-                    if mynode.id not in mynode.msgs["initial"][seqistr]:
-                        mynode.msgs["initial"][seqistr][mynode.id]=sv['C_Ps'][i]
-                    if seqistr not in mynode.msgs["echo"]:
-                        mynode.msgs["echo"][seqistr]={}
-                    if mynode.id not in mynode.msgs["echo"][seqistr]:
-                        mynode.msgs["echo"][seqistr][mynode.id]=hC_Ps
+            log+=str(rv['epoch'])
+            # print(f"node{mynode.id}<-{yourid} at epoch:{rv['epoch']}, receive broadcast type {tp} thread:{thread_id}") 
+            if get_value(mynode.sentTP,tp,rv['epoch']) == None:                
+                init_dict(mynode.sentTP,tp,rv['epoch'],False)
+        # print(f"{log} start")                  
+                        
+        if tp == "initial":
+            comts = rv['comts']
+            sv={}
+            sv['seqs']=rv['seqs']
+            sv['ld']=rv['ld']
+            ld=rv['ld']
 
-                mynode.seq += C_Plen
-                         
-                mynode.send_to_nodes({"type": "initial", "v": json.dumps(sv)}) 
-
-                sv['hC_Ps'] = hC_Ps
-                del sv['C_Ps']
-                mynode.send_to_nodes({"type": "echo", "v": json.dumps(sv)})                     
-        elif tp == "initial":
-            
-            seqStart = int(seq.split("seq_")[1])
-            seqistr=seq
-            for i in range(0, C_Plen):
-                seqi = seqStart + i 
-                seqistr = 'ld_%sseq_%d'%(leaderID, seqi)
-                mynode.msgs[tp][seqistr][yourid] = rv['C_Ps'][i]
-                mynode.pvss.verify(rv['C_Ps'][i]["C"], rv['C_Ps'][i]["pi"])
-            sv = {"hC_Ps":mynode.pvss.hash(rv['C_Ps'])}            
-            sv['epoch'] = epoch
-            sv['seq'] = seq   
+            for seq in comts:            
+                comt = comts[seq]
+                init_dict(mynode.msgs, tp,ld,seq,yourid,comt)                
+                mynode.pvss.verify(comt["C"], comt["pi"])
+            sv["comtsH"]=mynode.pvss.hash(rv['comts'])            
             sv['ts'] = rv['ts']
-            # sv['ts1'] = time.time()
-            seqStart = int(seq.split("seq_")[1])
-            # time.sleep(0.2)
-            if mynode.sendingCnt > 0:
-                time.sleep(mynode.sendingCnt / 500.)
-
-            for i in range(0, C_Plen):
-                seqi = seqStart + i 
-                seqistr = 'ld_%sseq_%d'%(leaderID,seqi)
-                if seqistr not in mynode.msgs["echo"]:
-                    mynode.msgs["echo"][seqistr]={}
-                if mynode.id not in mynode.msgs["echo"][seqistr]:
-                    mynode.msgs["echo"][seqistr][mynode.id]=sv['hC_Ps']
-                # mynode.msgs[tp][seqistr][yourid] = rv['C_Ps'][i]
-            # print("%s echo ct= %s at %s"%(mynode.id, sv['hC_Ps'], sv['seq']), len(mynode.msgs["echo"][seqistr]))
+            for seq in comts:
+                init_dict(mynode.msgs, "echo", mynode.id,seq,mynode.id,sv['comtsH'])
             mynode.send_to_nodes({"type": "echo", "v": json.dumps(sv)})  
         elif tp == "echo":
+            sv = {}
+            comtsH = rv['comtsH']
+            seqs=rv['seqs']
+            sv['ld']=rv['ld']
+            ld=rv['ld']
+            for seq in seqs:
+                init_dict(mynode.msgs, tp, ld,seq,yourid,comtsH)
             
-            seqStart = int(seq.split("seq_")[1])
-            seqistr=seq
-            for i in range(0, C_Plen):
-                seqistr = 'ld_%sseq_%d'%(leaderID, seqStart + i )
-                mynode.msgs[tp][seqistr][yourid] = rv['hC_Ps']
-            sv = {"hC_Ps":rv['hC_Ps']}
-            sv['epoch'] = epoch
-            sv['seq'] = seq            
+            sv['comtsH']=comtsH
+            sv['seqs'] = seqs            
             sv['ts'] = rv['ts']
-            # sv['ts1'] = rv['ts1']
             
-            # print(mynode.id, "recieve echo from",yourid, seq, rv['hC_Ps'],len(mynode.msgs["echo"][seq]))
-            if len(mynode.msgs["echo"][seqistr]) > 2*f or (seqistr in mynode.msgs["ready"] and len(mynode.msgs["ready"][seqistr]) > f):                
-                if not mynode.msgs[sentProducer]:
-                     mynode.msgs[sentProducer] = True
-                else:
-                    return                
-                # sv['ts2'] = time.time() 
-                # time.sleep(0.2) 
-                if mynode.sendingCnt > 0: 
-                    time.sleep(mynode.sendingCnt / 500)         
-                
-                
-                seqStart = int(seq.split("seq_")[1])
-                for i in range(0, C_Plen):
-                    seqistr = 'ld_%sseq_%d'%(leaderID,seqStart  + i )
-                    if seqistr not in mynode.msgs["ready"]:
-                        mynode.msgs["ready"][seqistr]={}
-                    if mynode.id not in mynode.msgs["ready"][seqistr]:
-                        mynode.msgs["ready"][seqistr][mynode.id]=sv['hC_Ps']
-                # print("node %s send ready ct: %s"%(mynode.id, sv['hC_Ps']))
+            # print(mynode.id, "recieve echo from",yourid, seq, comtsH,len(mynode.msgs["echo"][seq]))
+            echoSenders = get_value2(mynode.msgs, "echo",ld, seqs[0])
+            readySenders = get_value2(mynode.msgs, "ready",ld, seqs[0])
+            if (len(echoSenders) > 2*f) or (len(readySenders) > f):
+                for seq in seqs:
+                    if get_value(mynode.sentTP,tp,ld,seq):
+                        return                                
+                    init_dict(mynode.sentTP,tp,ld,seq,True)
+                    init_dict(mynode.msgs, 'ready',ld,seq,mynode.id,sv['comtsH'])
                 mynode.send_to_nodes({"type": "ready", "v": json.dumps(sv)}) 
 
         elif tp == "ready":
-            
-            # mynode.msgs[tp][seq][yourid] = rv['hC_Ps']
-            seqStart = int(seq.split("seq_")[1])
-            seqistr=seq
-            for i in range(0, C_Plen):
-                seqistr = 'ld_%sseq_%d'%(leaderID, seqStart + i )
-                mynode.msgs[tp][seqistr][yourid] = rv['hC_Ps']
-
-            if len(mynode.msgs["ready"][seqistr]) > 2*f:
-                
-                if not mynode.msgs[sentProducer]:
-                     mynode.msgs[sentProducer] = True
-                     for i in range(0, C_Plen):
-                        seqistr = 'ld_%sseq_%d'%(leaderID, seqStart + i )
-                        sentProducer = 'sent_%s_%s'%(tp, seqistr)
-                        mynode.msgs[sentProducer] = True
-                else:
-                    return
-
-                ts = time.time()
-                print(f"%s (%s/%s) consensus on %s, {WHITE}%.2f{RESET}/PVSS commitment"%\
-                    ( mynode.id, mynode.curSeq[int(mynode.id)], mynode.seq, seq, ts-rv['ts']) )
-                # time.sleep(100)
-                # print(seq, seqistr, mynode.msgs[tp][seqistr])
-                if seq.startswith("ld_%sseq_"%(mynode.id)):
-                    
-                    while mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)] :
-                        time.sleep(1)
-
-                    if CTs == None:
-                        CTs = [json.loads(json.dumps(mynode.pvss.share())) for i in range(0, C_Plen)] 
-                    # CTs = [json.loads(json.dumps(mynode.pvss.share())) for i in range(0, C_Plen)] 
-
-                    sv={'C_Ps': CTs}        
-                    sv['seq'] = "ld_%sseq_%d"%(mynode.id, mynode.seq)        
-                    sv['epoch'] = epoch
-                    sv['ts'] = time.time()
-                    # sv['ts1'] = time.time()
-                    hC_Ps = mynode.pvss.hash(sv['C_Ps'])
-                    for i in range(0, C_Plen):
-                        seqi = mynode.seq +i                    
-                        seqistr = 'ld_%sseq_%d'%(leaderID, seqi)
-                        if seqistr not in mynode.msgs["initial"]:
-                            mynode.msgs["initial"][seqistr]={}
-                        if mynode.id not in mynode.msgs["initial"][seqistr]:
-                            mynode.msgs["initial"][seqistr][mynode.id]=sv['C_Ps'][i]
-                        if seqistr not in mynode.msgs["echo"]:
-                            mynode.msgs["echo"][seqistr]={}
-                        if mynode.id not in mynode.msgs["echo"][seqistr]:
-                            mynode.msgs["echo"][seqistr][mynode.id]=hC_Ps
-                        
-                    mynode.seq += C_Plen
-                    mynode.send_to_nodes({"type": "initial", "v": json.dumps(sv)})  
-                    print("node%s start to initial at seq:%s"%(mynode.id, mynode.seq))
-                    sv['hC_Ps'] = hC_Ps
-                    del sv['C_Ps']
-                    mynode.send_to_nodes({"type": "echo", "v": json.dumps(sv)})                     
+            comtsH = rv['comtsH']
+            seqs=rv['seqs']
+            ld=rv['ld']
+            for seq in seqs:
+                init_dict(mynode.msgs, tp,ld,seq,yourid,comtsH)
+            readySenders = get_value2(mynode.msgs, "ready",ld, seqs[0])
+            if len(readySenders) > 2*f: 
+                for seq in seqs:
+                    if get_value(mynode.sentTP,tp,ld,seq):
+                        return
+                    init_dict(mynode.sentTP,tp,ld,seq,True)                    
+                    myprint(f"{mynode.id} ({mynode.curSeq[int(mynode.id)]}/{mynode.seq}) reaches consensus on " +
+                        f"leader {ld}'s {seq}th commitment, {WHITE}%.2fs{RESET}/PVSS commitment"%(time.time()-rv['ts']))
+                                
         elif tp == "recon":
-            if epoch not in mynode.cis[tp]:
-                mynode.cis[tp][epoch] = {}                
-            mynode.cis[tp][epoch][yourid] = rv['c_i']            
-            L = rv['L']
+            epoch = rv['epoch']            
             seq = rv['seq']
             Re_1=rv['Re_1']
-
+            newepoch = rv['newepoch']
+            L=rv['L']
+            LQ = rv['LQ']
+            Re_1=rv['Re_1']                        
             
-            # print(mynode.id, tp, epoch, len(mynode.cis[tp][epoch]))
-            if len(mynode.cis[tp][epoch]) > f:
-                if str(L) not in mynode.msgs["initial"][seq]:
-                    print(f"for node {mynode.id}, leader {str(L)} not in mynode.msgs['initial'][{seq}]")
-                    return
-                if not mynode.cis[sentConsumer]:
-                     mynode.cis[sentConsumer] = True
-                else:
-                    return
-                # time.sleep(0.05) 
-                C=mynode.msgs["initial"][seq][str(L)]['C']
-                starttime = time.time()
-                cis=mynode.cis[tp][epoch].copy()
-                gs = mynode.pvss.recon(C, cis)
-                
-                beaconV = int(mynode.pvss.hash(str(Re_1)+str(gs)))
-                # beaconV = hash(str(Re_1)+str(gs))
 
-                sv = {"beaconV":beaconV}            
-                sv['epoch'] = epoch                
-                sv['seq'] = seq
-                sv['newepoch'] = rv['newepoch']
-                sv['L'] = rv['L'] 
-                sv['LQ']=rv['LQ']
-                sv['Re_1'] = rv['Re_1']
-                sv['ts'] = rv['ts']
-                # sv['ts1'] = rv['ts1']
-                # sv['ts2'] = time.time()
-                # time.sleep(0.05)
-                if epoch not in mynode.cis["reconEcho"]:
-                    mynode.cis["reconEcho"][epoch]={}
-                if mynode.id not in mynode.cis["reconEcho"][epoch]:
-                    mynode.cis["reconEcho"][epoch][mynode.id]=sv['beaconV']
-                
-                mynode.send_to_nodes({"type": "reconEcho", "v": json.dumps(sv)})
-
-        elif tp == "reconEcho":            
-            mynode.cis[tp][epoch][yourid] = rv['beaconV']
-            
+            comt = get_value(mynode.msgs,"initial",L,seq,L)# initial message is from L
+            if get_value(mynode.sentTP,tp,epoch):#to accerlate in case another thread is running
+                init_dict(mynode.cis,tp,epoch,yourid,{'ci':rv['c_i'], 'check':False})  
+                return    
             flag=False
-            if len(mynode.cis["reconReady"][epoch]) > f:
-                cis_tp_epoch =mynode.cis["reconReady"][epoch].copy()
-                values = {}  
-                for yid in cis_tp_epoch:
-                    lqHash = mynode.pvss.hash(cis_tp_epoch[yid])
-                    if lqHash not in values:
-                        values[lqHash] = 0
-                    values[lqHash] += 1
-                for lqHash in values:
-                    if values[lqHash] > f:
-                        flag=True
+            if comt != None:
+                flag= mynode.pvss.vrfRecon(comt['C']["C1"][yourid], yourid, rv['c_i'])
+            init_dict(mynode.cis,tp,epoch,yourid,{'ci':rv['c_i'], 'check':flag})  
 
-            
-            if len(mynode.cis[tp][epoch]) > 2*f or flag:
-                if not mynode.cis[sentConsumer]:
-                     mynode.cis[sentConsumer] = True
-                else:
-                    return         
-                # time.sleep(0.05)                
-                sv = {"beaconV":rv['beaconV']}
-                sv['epoch'] = epoch
-                sv['seq'] = seq            
-                sv['newepoch'] = rv['newepoch']  
-                sv['L'] = rv['L']                
-                sv['Re_1'] = rv['Re_1']      
-                sv['LQ'] = rv['LQ']
-                sv['ts'] = rv['ts']
-                # sv['ts1'] = rv['ts1']
-                # sv['ts2'] = rv['ts2']
-                # sv['ts3'] = time.time()
+            reconSenders = get_value2(mynode.cis,tp,epoch)
+            if comt!=None and len(reconSenders) > f:
+                if get_value(mynode.sentTP,tp,epoch):
+                    return
+                cis={}
+                ci2k=get_value(mynode.cis,tp,epoch).copy()
+                for yid in ci2k:
+                    if get_value(mynode.sentTP,tp,epoch):#to accerlate in case another thread is running
+                        return    
+                    if get_value(mynode.cis,tp,epoch,yourid,'check')\
+                        or mynode.pvss.vrfRecon(comt['C']["C1"][yid], yid, ci2k[yid]["c_i"]):
+                            cis[yid]=ci2k[yid]                    
+                if len(cis.keys())<=f:
+                    return
+                init_dict(mynode.sentTP,tp,epoch,True)
+                gs = mynode.pvss.recon(comt['C'], cis, False)                
+                beaconV = int(mynode.pvss.hash(str(Re_1)+str(gs)))                
+                sv={}        
+                sv['beaconV']=beaconV
+                for field in ['epoch','seq','newepoch','L','LQ','Re_1']:
+                    sv[field] = rv[field]
+                                   
+                init_dict(mynode.cis,"reconEcho",epoch,mynode.id,sv)
+                mynode.send_to_nodes({"type": "reconEcho", "v": json.dumps(sv)})
+        elif tp == "reconEcho":   
+            epoch = rv['epoch']                     
+            init_dict(mynode.cis,tp,epoch,yourid,rv)
+
+            reconReadySenders=get_value2(mynode.cis,"reconReady",epoch)
+            reconEchoSenders=get_value2(mynode.cis,"reconEcho",epoch)            
+            # print(f"=========node{mynode.id},{tp}, {mynode.cis[tp]}")
+            if len(reconEchoSenders) > 2*f or len(reconReadySenders) > f:                
+                if get_value(mynode.sentTP,tp,epoch): 
+                    return                                 
+                init_dict(mynode.sentTP,tp,epoch,True)
+
+                sv={}
+                for field in ['beaconV','epoch','seq','newepoch','L','LQ','Re_1']:
+                    sv[field] = rv[field]
                 
-                if epoch not in mynode.cis["reconReady"]:
-                    mynode.cis["reconReady"][epoch]={}
-                if mynode.id not in mynode.cis["reconReady"][epoch]:
-                    mynode.cis["reconReady"][epoch][mynode.id]={"beaconV":rv['beaconV'],"LQ":rv['LQ'],'L':rv['L'], 'Re_1':rv['Re_1'],'newepoch':rv['newepoch']}
-                # print("node %s send reconReady ct: %s"%(mynode.id, sv))
+                init_dict(mynode.cis,"reconReady",epoch,mynode.id,sv)
+                # print(f"\nnode{mynode.id} at epoch:{epoch}, broadcast 'reconReady'") 
                 mynode.send_to_nodes({"type": "reconReady", "v": json.dumps(sv)})
+            # else:
+            #     print(f"node{mynode.id} at {tp}, epoch: {epoch} {reconEchoSenders.keys()}, 'reconReady', {reconReadySenders.keys()}") 
         elif tp == "reconReady":
-            mynode.cis[tp][epoch][yourid] = {"beaconV":rv['beaconV'],"LQ":rv['LQ'],'L':rv['L'], 'Re_1':rv['Re_1'],'newepoch':rv['newepoch']}
-            if len(mynode.cis[tp][epoch]) > 2*f: 
-
-                cis_tp_epoch =mynode.cis[tp][epoch].copy()
-                values = {}  
-                for yid in cis_tp_epoch:
-                    lqHash = mynode.pvss.hash(cis_tp_epoch[yid])
-                    if lqHash not in values:
-                        values[lqHash] = 0
-                    values[lqHash] += 1
-
-                if values[mynode.pvss.hash(mynode.cis[tp][epoch][yourid])] <= 2*f:
-                    print("node%s reconReady------------------------------------------------------- valid <= 2*f"%(mynode.id), values[mynode.pvss.hash(mynode.cis[tp][epoch][yourid])])
-                    return
-
-                if not mynode.cis[sentConsumer]:
-                     mynode.cis[sentConsumer] = True
-                else:
-                    return
-
+            epoch = rv['epoch']            
+            init_dict(mynode.cis,"reconReady",epoch,yourid,rv)
+            
+            reconReadySenders=get_value2(mynode.cis,"reconReady",epoch)
+            # print(f"\n=========node{mynode.id},{tp}, {mynode.cis[tp]}\n")
+            if len(reconReadySenders) > 2*f: 
+                if get_value(mynode.sentTP,tp,epoch): 
+                    return                     
+                
+                init_dict(mynode.sentTP,tp,epoch,True)
+                            
                 if mynode.epoch >= rv['newepoch']:
-                    print("node%s reconReady-------------------------------------------------------mynode.epoch >= rv['newepoch']"%(mynode.id))
+                    print("node{mynode.id} {tp}-------------------------------------------------------mynode.epoch >= rv['newepoch']")
                     return
             
-                # time.sleep(0.05) 
+                
                 beaconV = rv['beaconV']
                 L = rv['L']                
                 Re_1 = rv['Re_1']
@@ -357,114 +247,119 @@ def callback(event, mynode, yournode, data):
                     if j in mynode.CL:
                         del mynode.CL[j]
                 keys = list(mynode.CL.keys())
-                # print(keys, int(beaconV) % len(keys))
                 newL = keys[int(beaconV) % len(keys)]
-                # endtime = time.time()
-                # print(" Leaders sendingCnt %s"%,mynode.sendingCnt)
-                
-                proSendSize=mynode.producerSentSize
-                proRcvSize=mynode.producerRecvSize
-                conSendSize=mynode.consumerSentSize
-                conRcvSize=mynode.consumerRecvSize
-                printStr = "%s(%s/%s) epoch:%s"% (mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch)                
-                printStr = printStr+ f" Leader%s->%s %s, value: ***%s {RED}%.2fs{RESET}/beacon {BLUE}%2.fkB{RESET}/beacon"% (L, newL,seq,\
-                    beaconV%100000,(time.time()-rv['ts'])/mynode.epoch, (proSendSize+proRcvSize+conSendSize+conRcvSize)/mynode.epoch/1024.)
-                # printStr = printStr+ " producer SEND:%.2f"%(proSendSize)
-                # printStr = printStr+ " producer RCV:%.2f"%(proRcvSize)
-                # printStr = printStr+ " consumer SEND:%.2f"%(conSendSize)
-                # printStr = printStr+ " consumer RCV:%.2f"%(conRcvSize)
-                
-                
-                print(printStr)
-                     
                 mynode.Re_1 = beaconV                
                 mynode.epoch=rv['newepoch']
                 mynode.L=L
                 mynode.newL = newL
 
-                # print(seq)
-                # leaderSeq = int(seq.split("seq_")[1])        
-                leaderID = mynode.L
-                leaderSeq=mynode.curSeq[leaderID]
+                proSendSize=mynode.producerSentSize
+                proRcvSize=mynode.producerRecvSize
+                conSendSize=mynode.consumerSentSize
+                conRcvSize=mynode.consumerRecvSize
+                printStr = f"%s(%s/%s) {time.time()} epoch:%s"% (mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch)
+                printStr = printStr+ f" Leader from{L}->{newL} consuming, value: ***{beaconV%100000} " +\
+                f"({RED}%.2fs{RESET}, {BLUE}%2.fkB{RESET})/beacon"% ( (time.time()-mynode.starttime)/mynode.epoch, (proSendSize+proRcvSize+conSendSize+conRcvSize)/mynode.epoch/1024.)
                 
-                # #These temporary data can be removed from memory in practice
+                myprint(printStr) 
+
+
+                # leaderID = mynode.L
+                # leaderSeq=mynode.curSeq[leaderID]
                 # for tpi in ["initial","echo", "ready"]:
-                #     for j in range(100,200):
-                #         seqistr = 'ld_%sseq_%d'%(leaderID, leaderSeq-j)      
-                #         if seqistr in mynode.msgs[tpi]:
-                #             del mynode.msgs[tpi][seqistr]                    
-                #         if seqistr in mynode.msgs["initial"]:
-                #             del mynode.msgs["initial"][seqistr]
-                #         if seqistr in mynode.msgs["echo"]:
-                #             del mynode.msgs["echo"][seqistr]
-                #         if seqistr in mynode.msgs["ready"]:
-                #             del mynode.msgs["ready"][seqistr]
-                #         sentConsumer2 = "sent_%s_%s"%(tpi, leaderSeq-j)
-                #         if sentConsumer2 in mynode.cis:
-                #             del mynode.cis[sentConsumer2]
-
+                #     for j in range(10,20):
+                #         del mynode.msgs[tpi][str(leaderID)][str(leaderSeq-j)]
                 # for tpi in ["recon", "reconEcho", "reconReady"]:
-                #     for j in range(100,200):
-                #         seqistr = 'ld_%sseq_%d'%(leaderID, leaderSeq-j)      
+                #     for j in range(10,20):
+                #         del mynode.cis[tpi][str(epoch-j)]
                         
-                #         if leaderSeq-j in mynode.cis[tpi]:
-                #             del mynode.cis[tpi][leaderSeq-j]  
-                                                  
-                #         sentProducer2 = "sent_%s_%s"%(tpi, seqistr)
-                #         if sentProducer2 in mynode.msgs:
-                #             del mynode.msgs[sentProducer2]
+                
 
-                        
-            
-class Peer(threading.Thread):
-    def __init__(self, ID):
-        super(Peer, self).__init__()
-        self.ID= ID
-        self.config = config
-        node = Node(ip, port, ID, callback)
+
+class BaseThread(threading.Thread):
+    def __init__(self, ID, node):
+        super().__init__()
+        self.ID = ID
         self.node = node
 
+    def run(self):
+        raise NotImplementedError("Subclasses must implement this method")
+
+
+
+class Producer(BaseThread):
+    def run(self):              
+        mynode=self.node   
+        while True:
+            if len(node.nodes_outbound)+len(node.nodes_inbound) == n-1:
+                break
+            time.sleep(0.5)
+        time.sleep(5)
+        print(f"{mynode.id} producer starts")
+        
+        while True:        
+            sv={}
+            sv['seqs']=[]
+            sv['ld']=mynode.id
+            comts={}
+            for i in range(0, C_Plen):
+                comts[mynode.seq]=json.loads(json.dumps(mynode.pvss.share()))
+                sv['seqs'].append(mynode.seq) 
+                mynode.seq+=1          
+                # print("mynode.seq+=1 in ready")                  
+            
+            sv['comts']=comts
+            sv['ts'] = time.time()      
+            ld=mynode.id                       
+            
+            # mynode.sentTP[tp][ld][seqs[0]]=True
+            comtsH = mynode.pvss.hash(sv['comts'])                                
+            for seq in comts:
+                init_dict(mynode.msgs, "initial",ld,seq,mynode.id,comts[seq])
+                init_dict(mynode.msgs, "echo",ld,seq,mynode.id,comtsH)                                             
+            sv['ld']=ld
+            mynode.send_to_nodes({"type": "initial", "v": json.dumps(sv)})                 
+            sv['comtsH'] = comtsH                
+            # print(f"node{mynode.id} send initial message of seq:{mynode.seq}")  
+            del sv['comts']
+            mynode.send_to_nodes({"type": "echo", "v": json.dumps(sv)})                     
+            
+            while True:
+                # if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)] :            
+                if mynode.seq - 3 > mynode.curSeq[int(mynode.id)] :            
+                    time.sleep(1)
+                else:
+                    break
+                # else:
+                #     if random.random()>0.7:
+                #         break
+                #     else:
+                #         time.sleep(1)
+
+
+
+class Consumer(BaseThread):
     def start(self):
-        node = self.node
-        self.node.start()
-
-        time.sleep(10)
-
-        for j in range(int(self.ID)+1, n+1):
-            node.connect_with_node(config["nodes"][str(j)]["ip"],config["portBase"]+j)
-            print("Node %s connect %d (%s:%d)"%(self.ID, j, config["nodes"][str(j)]["ip"], config["portBase"]+j))           
-        time.sleep(int(ID)/3+10)
-        v = {'pk':node.pvss.pk}
-        v['epoch'] = -1
-        v['seq'] = "ld_%sseq_%d"%(self.ID, -1) 
-        node.send_to_nodes({"type": "pks", "v": json.dumps(v)})
-        
-        
-        keys = list(node.CL.keys())
-        node.newL = keys[node.Re_1 % len(node.CL)]
-        
-        print(node.id, "choose leader",node.newL)
         sentDict={}
         
-        starttime = time.time()
-
-        time.sleep(config['pkswait'])
+        keys = list(node.CL.keys())
+        node.newL = keys[node.Re_1 % len(node.CL)]                        
+        
+        while True:
+            if len(node.nodes_outbound)+len(node.nodes_inbound) == n-1:
+                break
+            time.sleep(0.5)
+        time.sleep(10)
         print("Node %s consumer starts"%node.id)
+        node.starttime=time.time()
         lastReconn = time.time()
         while True:
-
             if len(node.nodes_outbound)+len(node.nodes_inbound) < n-1:                
                 if time.time() - lastReconn > 5:
+                    print(f"node:{node.id} reconnect_nodes: {len(node.nodes_outbound)+len(node.nodes_inbound)}, then reconnection")
                     node.reconnect_nodes()    
-                    lastReconn = time.time()
-                # time.sleep(0.5)
-                # print("node%s connections %d node.reconnect_nodes()==========================================="%(node.id, len(node.nodes_outbound)+len(node.nodes_inbound)))
-
-            if node.epoch <= 2:
-                starttime = time.time()
-
-        #     # if "initial" in node.msgs and node.curSeq[node.L] in node.msgs["initial"]:
-        #     #     print(len(node.msgs["initial"][node.curSeq[node.L]]))
+                    lastReconn = time.time()                    
+                    
             time.sleep(config['consumerSleep'])            
             if(node.newL == node.L):
                 print("node.newL == node.L",node.L)
@@ -473,52 +368,35 @@ class Peer(threading.Thread):
                 print("node.newL not in node.curSeq")
                 continue
             
-            seq = "ld_%sseq_%d"%(node.newL, node.curSeq[node.newL])
-            # print("node%s consume "%node.id, seq)
-            sent = "sent_%s_%s"%("ready", seq)
+            seq = node.curSeq[node.newL]
 
-            sent2 = "mynode_%sseq_%d"%(node.newL,node.curSeq[node.newL])
+            sent2 = "mynode_%sseq_%d"%(node.newL,seq)
             if sent2 in sentDict:           
-                # print("%s has sent2 in sentDict"%node.id,getattr(node, "id"), sent2, node.epoch, seq, node.newL)
+                # print(f"node {node.id} has {sent2} in sentDict at epoch:{node.epoch}")
+                # time.sleep(10)
                 continue
             
-            # if sent in node.msgs and node.msgs[sent] and \        
-            if "initial" in node.msgs and (seq in node.msgs["initial"] and \
-                 str(node.newL) in node.msgs["initial"][seq]):# and \
-                 # len(node.msgs["initial"][seq][str(node.newL)])>=1 :
-
+            comt = get_value(node.msgs,"initial",node.newL,seq,node.newL)
+            # print(f"node{node.id}'s ld:{node.newL} initial conent: {get_value(node.msgs,'initial',node.newL,seq,node.newL)}")
+            if comt !=None:    
                 sentDict[sent2]=True
-
-                EC = node.msgs["initial"][seq][str(node.newL)]
-                # print(EC)
-                sv = {'c_i': node.pvss.preRecon(EC['C'], self.ID)}
+                sv = {}
+                sv['c_i']=node.pvss.preRecon(comt['C'], node.id)                
                 sv['epoch'] = node.epoch
                 sv['newepoch'] = node.epoch+1
                 sv['L'] = node.newL
                 sv['LQ']=list(node.LQ.all())               
                 sv['seq'] = seq
-                sv['Re_1'] = node.Re_1
-                sv['ts'] = starttime
-                # sv['ts1'] = time.time()
-                # print("%s start to consume %d's %dth ciphertext %s cost:%s"%(node.id, node.newL, node.curSeq[node.newL], int(node.pvss.hash(EC))%100000, time.time()-starttime))  
-                if sv['epoch'] not in node.cis['recon']:
-                    node.cis['recon'][sv['epoch']] = {}
-                # if sv['epoch'] not in node.cis['reconEcho']:
-                #     node.cis['reconEcho'][sv['epoch']] = {}
-                # if sv['epoch'] not in node.cis['reconReady']:
-                #     node.cis['reconReady'][sv['epoch']] = {}
-                node.cis['recon'][sv['epoch']][node.id] = sv['c_i']
+                sv['Re_1'] = node.Re_1                
+                
+                init_dict(node.cis,'recon',sv['epoch'],node.id, sv['c_i'])
+                # print(f"node{node.id} at epoch:{node.epoch}, broadcast 'recon'") 
                 node.send_to_nodes({"type": "recon", "v": json.dumps(sv)})
-            else:
-                # if sent not in node.msgs :
-                #     print(node.id,"wait for ",sent)
-                if seq not in node.msgs["initial"]:
-                    print(node.id,"wait for initial",seq, "connected nodes:%s"%(len(node.nodes_outbound)+len(node.nodes_inbound)))                    
-                else:
-                    if str(node.newL) not in node.msgs["initial"][seq] :
-                        print(node.id,"wait for newL", str(node.newL), seq, "connected nodes:%s"%(len(node.nodes_outbound)+len(node.nodes_inbound)))                    
-                    else:
-                        print(node.id,"wait for >1", "connected nodes:%s"%(len(node.nodes_outbound)+len(node.nodes_inbound)))                    
+
+            # else:
+            #     # get_value(node.msgs,"initial",node.newL,seq)!=None:    
+            #     print(f"node:{node.id} waits for initial message of seq:{seq}")                    
+            
            
 # from flask import Flask, render_template,request,jsonify,redirect,url_for,send_from_directory
 # class MyThread(threading.Thread):
@@ -538,11 +416,35 @@ class Peer(threading.Thread):
 #         app.run('0.0.0.0', port+1000)
 
 
+
 if __name__ == '__main__':    
-    peer = Peer(ID)
-    peer.setDaemon(True)
+    node = Node(ip, port, ID, callback)    
+    node.setDaemon(True)    
+    node.start()   
+    time.sleep(10)# ssh remotestart.sh
+    for j in range(int(ID)+1, n+1):
+        node.connect_with_node(config["nodes"][str(j)]["ip"],config["portBase"]+j)
+        print("Connceting  Node %s <----> %d (%s:%d)"%(ID, j, config["nodes"][str(j)]["ip"], config["portBase"]+j))           
+    
+    
+    for i in range(1, n+1):
+        node.pvss.setPK(i, config["keys"][str(i)]["pk"])
+    node.pvss.setKey(config["keys"][node.id])
+    
+
+    consumer = Consumer(ID,node)
+    consumer.setDaemon(True)
+    producer=Producer(ID,node)
+    producer.setDaemon(True)
+    
+
+    producer.start()
+    consumer.start()
+    producer.join()
+    consumer.join()
+    node.join()
+
     # app = MyThread(peer.node)
     # app.start()
-    peer.start()
-    # peer.join()
+    
     
