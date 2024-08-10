@@ -12,5 +12,5 @@ for location in loc2ips:
     for ip in ips:
         config['nodes'][str(i)]={"ip":ip}
         i+=1
-
+config['initwait'] = i/2
 # print(config)

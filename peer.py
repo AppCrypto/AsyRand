@@ -257,7 +257,7 @@ def callback(event, mynode, yournode, data):
                 proRcvSize=mynode.producerRecvSize
                 conSendSize=mynode.consumerSentSize
                 conRcvSize=mynode.consumerRecvSize
-                printStr = f"%s(%s/%s) {time.time()} epoch:%s"% (mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch)
+                printStr = f"%s(%s/%s) {n}-{C_Plen}-{config['buffer']} epoch:%s"% (mynode.id,mynode.curSeq[int(mynode.id)], mynode.seq, epoch)
                 printStr = printStr+ f" Leader from{L}->{newL} consuming, value: ***{beaconV%100000} " +\
                 f"({RED}%.2fs{RESET}, {BLUE}%2.fkB{RESET})/beacon"% ( (time.time()-mynode.starttime)/mynode.epoch, (proSendSize+proRcvSize+conSendSize+conRcvSize)/mynode.epoch/1024.)
                 
@@ -294,8 +294,8 @@ class Producer(BaseThread):
             if len(node.nodes_outbound)+len(node.nodes_inbound) == n-1:
                 break
             time.sleep(0.5)
-        time.sleep(5)
-        print(f"{mynode.id} producer starts")
+        time.sleep(config['initwait'])
+        myprint(f"{mynode.id} producer starts")
         
         while True:        
             sv={}
@@ -326,7 +326,7 @@ class Producer(BaseThread):
             
             while True:
                 # if mynode.seq - config["C_Ptimes"]* C_Plen > mynode.curSeq[int(mynode.id)] :            
-                if mynode.seq - 3 > mynode.curSeq[int(mynode.id)] :            
+                if mynode.seq - config["buffer"] > mynode.curSeq[int(mynode.id)] :            
                     time.sleep(1)
                 else:
                     break
@@ -349,8 +349,8 @@ class Consumer(BaseThread):
             if len(node.nodes_outbound)+len(node.nodes_inbound) == n-1:
                 break
             time.sleep(0.5)
-        time.sleep(10)
-        print("Node %s consumer starts"%node.id)
+        time.sleep(config['initwait'])
+        myprint("Node %s consumer starts"%node.id)
         node.starttime=time.time()
         lastReconn = time.time()
         while True:
@@ -421,10 +421,10 @@ if __name__ == '__main__':
     node = Node(ip, port, ID, callback)    
     node.setDaemon(True)    
     node.start()   
-    time.sleep(10)# ssh remotestart.sh
+    time.sleep(15)# ssh remotestart.sh
     for j in range(int(ID)+1, n+1):
         node.connect_with_node(config["nodes"][str(j)]["ip"],config["portBase"]+j)
-        print("Connceting  Node %s <----> %d (%s:%d)"%(ID, j, config["nodes"][str(j)]["ip"], config["portBase"]+j))           
+        myprint("Connceting  Node %s <----> %d (%s:%d)"%(ID, j, config["nodes"][str(j)]["ip"], config["portBase"]+j))           
     
     
     for i in range(1, n+1):
