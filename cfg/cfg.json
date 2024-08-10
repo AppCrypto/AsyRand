@@ -6,7 +6,7 @@
 	"g2":"{\"_type\": \"element\", \"value\": {\"_type\": \"bytes\", \"value\": \"2:HU4lhRwkIHlgd2RZeIB9vaYMxgI9zuuDR5bOxjq1vsuNpObctbbnFRPq2SdI3R+DvsZsIdYB/GR92v1jAA==\"}}",
 	"Re_1":1234567890987654321,
 	"L":4,	
-	"C_Plen":2,
+	"C_Plen":4,
 	"buffer":2,
 	"consumerSleep":0.001,
 	"rcvsize":4096,
