@@ -1,4 +1,9 @@
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, GT, pair
+import sys
+import os
+current_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(current_dir)
+sys.path.insert(0, parent_dir)
 from newsecretutils import SecretUtil
 import newjson as newjson
 from charm.toolbox.ABEnc import ABEnc, Input, Output
@@ -32,7 +37,7 @@ class PPVSS():
                     # print(vi,i,j)
             self.codeword.append(vi)
         # print(self.codeword)
-    def distribute(self, j):
+    def distribute(self):
         ts = time.time()
         s = self.group.random(ZR)
         self.S = self.g ** s
@@ -103,31 +108,31 @@ class PPVSS():
         return True
 
 
-
-    def reconstruct(self, dist, j):
-
-        # DLEQ proofs by shareholders
+    def preRecon(self,dist):
         stidle = [self.group.init(G1, 1)]
         for i in range(1, N + 1):
             stidle.append(dist["shat"][i] ** (1 / self.sks[i]))
 
-
-
-        w = self.group.random(ZR)
-        z, a1, a2 = [0 for i in range(0, len(self.sks))], \
+        w,z, a1, a2 = [ self.group.random(ZR) for i in range(0, len(self.sks))], \
+                    [0 for i in range(0, len(self.sks))], \
                     [0 for i in range(0, len(self.sks))], \
                     [0 for i in range(0, len(self.sks))]
         c = self.group.hash(str(stidle) + str(dist["shat"]), ZR)
 
         for i in range(1, len(z)):
-            a1[i] = self.g ** w
-            a2[i] = stidle[i] ** w
-            z[i] = w - self.sks[i] * c
+            a1[i] = self.g ** w[i]
+            a2[i] = stidle[i] ** w[i]
+            z[i] = w[i] - self.sks[i] * c
 
         dleqPrfs = {"c": c, "a1": a1, "a2": a2, "z": z}
         recon = dleqPrfs.copy()
         recon["vs"] = stidle
         recon["shat"] = dist["shat"]
+        return recon
+
+    def reconstruct(self, dist):
+
+        recon=self.preRecon(dist)
         
         starttime = time.time()
         DLEQ_verification = self.dleq_verify(recon)
@@ -144,7 +149,7 @@ class PPVSS():
         y = self.util.recoverCoefficients(indexArr)
         z = self.group.init(G1, 1)
         for i in indexArr:
-            z *= stidle[i] ** y[i]
+            z *= recon["vs"][i] ** y[i]
         if self.S != z:
             return -2
         print("Albatross reconstruction cost: %.3fs size: %.2fkB"%(time.time()- starttime,  len(str(recon))/1024.))
@@ -158,12 +163,12 @@ ver_cost = 0
 rec_cost = 0
 n=1
 for i in range(n):
-    dis = albatross.distribute(i)
+    dis = albatross.distribute()
     albatross.LDEI_verify(dis)
     # if i == 1:
     #     print("Albatross verification result: ", ver_result["result"])
     # ver_cost += ver_result["cost"]
-    albatross.reconstruct(dis, i)
+    albatross.reconstruct(dis)
 # print("Albatross verification cost:", ver_cost/n)
 
 
