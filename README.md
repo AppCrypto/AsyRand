@@ -5,7 +5,7 @@
 1. upload source codes to a node "ubuntu@3.0.95.226"
 
     ```bash
-    rsync -avz -e "ssh -i ./pem/BeaconTest_Singapore.pem" ./ ubuntu@3.0.95.226:~/beacon/
+    rsync -avz -e "ssh -i ./pem/BeaconTest_Singapore.pem" ./ ubuntu@54.151.240.92:~/beacon/
     ```
 
 2. on node "ubuntu@3.0.95.226", run 

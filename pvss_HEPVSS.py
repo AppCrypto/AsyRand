@@ -74,7 +74,6 @@ class HEPVSS():
         self.S=self.g**s
         
         shares = self.util.genShares(s, t, N)
-        # print(s,shares,len(shares))
         A=[0]
         A.extend([self.g ** shares[i]  for i in range(1, N+1)])
         rho=[0]
@@ -104,14 +103,14 @@ class HEPVSS():
         return True
 
     def preRecon(self, Ci, i):
-        Ai= (Ci[0]**self.sks[i])
+        AiSnd= (Ci[0]**self.sks[i])
         skp=self.group.random(ZR)        
         a=Ci[0]**skp
         e=self.hash((self.pks[i],a))
         # print(i, a, e)
         z=skp+e*self.sks[i]
-        # print(i, Ci[0]**z/(Ai**e), e)
-        return (Ai,e,z)
+        # print(i, Ci[0]**z/(AiSnd**e), e)
+        return (AiSnd,e,z)
         
 
     def reconstruct(self, dist):
@@ -119,14 +118,15 @@ class HEPVSS():
         C=dist["C"]
         for i in range(1, N+1):
             recon[i] = self.preRecon(C[i],i)            
-        
+        A={}
         starttime = time.time()     
         for i in range(1, N+1):
-            Ai,e,z = recon[i]
+            AiSnd,e,z = recon[i]
             Aiz= (C[i][0]**z)
-            if e != self.hash((self.pks[i], Aiz/(Ai**e))):
+            if e != self.hash((self.pks[i], Aiz/(AiSnd**e))):
                 print("HEPVSS fail to proveDec", i)
                 return
+            A[i]= C[i][1]/AiSnd
            
 
         indexArr = [i for i in range(1,N+1)]
@@ -134,9 +134,8 @@ class HEPVSS():
         indexArr=indexArr[0:t]
         y = self.util.recoverCoefficients(indexArr)
         z=self.group.init(G1,1)
-        for i in indexArr:    
-            Ai= C[i][1]/C[i][0]**self.sks[i]
-            z *= Ai**y[i]    
+        for i in indexArr:                
+            z *= A[i]**y[i]    
         print("HEPVSS reconstruction cost %.3fs size: %.2fkB"%((time.time()- starttime), len(str(recon))/1024.))
         if self.S!=z: 
             print("HEPVSS fail to reconstruct")
