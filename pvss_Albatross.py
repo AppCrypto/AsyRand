@@ -119,8 +119,7 @@ class PPVSS():
             a2[i] = stidle[i] ** w[i]
             z[i] = w[i] - self.sks[i] * c
 
-        dleqPrfs = {"c": c, "a1": a1, "a2": a2, "z": z}
-        recon = dleqPrfs.copy()
+        recon = {"a1": a1, "a2": a2, "z": z}
         recon["vs"] = stidle
         recon["shat"] = dist["shat"]
         return recon
