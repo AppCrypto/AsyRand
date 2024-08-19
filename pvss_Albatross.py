@@ -38,9 +38,6 @@ class PPVSS():
         self.S = self.g ** s
         shares = self.util.genShares(s, t, N)
         # print(s,shares,len(shares))
-        # vs = [0]
-        # vs.extend([self.gp ** shares[i] for i in range(1, N + 1)])
-        # print(shat)
         shat = [0]
         shat.extend([self.pks[i] ** shares[i] for i in range(1, N + 1)])
 
@@ -56,8 +53,7 @@ class PPVSS():
         LDEIpr = {"e": e, "ai_s": ai_s, "z_s": z_s}
 
         dist = LDEIpr.copy()
-        dist["shat"] = shat
-        # dist["vs"] = vs
+        dist["shat"] = shat        
         print("Albatross distribution cost %.2fs, size: %.2fkB" %(time.time()- ts, len(str(dist))/1024.))
         return dist
 

@@ -65,14 +65,15 @@ test = pair_exp.time_cost()
 
 p=groupObj.random(G1)
 z=groupObj.random(ZR)
-print(f"MNT159 point size:{len(str(p))}, z sie:{len(str(z))}")
+print(f"MNT159 point size:{len(str(p))}, z size:{len(str(z))}")
 
 
 
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, GT, pair
 groupObj = PairingGroup("MNT159")
 p=groupObj.random(G1)
-print(f"MNT159 point size:{len(str(p))}")
+p2=groupObj.random(G2)
+print(f"MNT159 point size G1: {len(str(p))}, G2: {len(str(p2))}")
 
 from charm.toolbox.pairinggroup import PairingGroup, ZR, G1, G2, GT, pair
 groupObj = PairingGroup("SS512")

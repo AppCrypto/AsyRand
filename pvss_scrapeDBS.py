@@ -43,19 +43,15 @@ class SCRAPE():
 
         
         shares = self.util.genShares(s, t, N)
-        # print(s,shares,len(shares))
-        vs=[0]
-        vs.extend([self.g ** shares[i] for i in range(1, N+1)])
-        # print(shat)
+        
         shat=[0]
         shat.extend([self.pks[i]** shares[i] for i in range(1, N+1)])
+
+        vs=[0]
+        vs.extend([self.g ** shares[i] for i in range(1, N+1)])
         
         res={"shat":shat,"vs":vs}
-        # print("GT",len(str(self.group.random(GT))))
-        # print("G1",len(str(self.group.random(G1))))
-        # print("G2",len(str(self.group.random(G2))))
-        
-        print("ScrapeDBS dis message size %.3fs, cost %.2fkB"%(time.time()-starttime, len(str(res))/1024.))
+        print("ScrapeDBS dis message cost %.3fs, size %.2fkB"%(time.time()-starttime, len(str(res))/1024.))
         return res
 
 
