@@ -1,4 +1,4 @@
-# Proof of concept implementation for "FastRand"
+# Proof of concept implementation for "AsyRand"
 
 # How to run
 
