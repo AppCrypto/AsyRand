@@ -85,7 +85,7 @@ def callback(event, mynode, yournode, data):
                 if get_value(mynode.sentTP,tp,rv['ld'],seq) == None:
                     init_dict(mynode.sentTP,tp,rv['ld'],seq,False)                
                 
-        elif tp in ["recon", "reconEcho", "reconReady"]:
+        elif tp in ["reconEcho", "reconReady"]:
             mynode.consumerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
             # TODO TEST
             # if mynode.epoch >= rv['newepoch']:
@@ -153,7 +153,7 @@ def callback(event, mynode, yournode, data):
                     myprint(f"{mynode.id} ({mynode.curSeq[int(mynode.id)]}/{mynode.seq}) reaches consensus on " +
                         f"leader {ld}'s {seq}th commitment, {WHITE}%.2fs{RESET}/PVSS commitment"%(time.time()-rv['ts']))
                                 
-        elif tp == "recon":
+        elif tp == "reconEcho":
             epoch = rv['epoch']            
             seq = rv['seq']
             Re_1=rv['Re_1']
@@ -173,7 +173,7 @@ def callback(event, mynode, yournode, data):
             init_dict(mynode.cis,tp,epoch,yourid,{'c_i':rv['c_i'], 'check':flag})  
 
             reconSenders = get_value2(mynode.cis,tp,epoch)
-            if comt!=None and len(reconSenders) > f:
+            if comt!=None and len(reconSenders) > 2*f:
                 if get_value(mynode.sentTP,tp,epoch):
                     return
                 cis={}
@@ -185,7 +185,7 @@ def callback(event, mynode, yournode, data):
                     if get_value(mynode.cis,tp,epoch,yourid,'check')\
                         or mynode.pvss.vrfRecon(comt['C']["C1"][yid], yid, ci2k[yid]["c_i"]):
                             cis[yid]=ci2k[yid]                    
-                if len(cis.keys())<=f:
+                if len(cis.keys()) <= 2*f:
                     return
                 init_dict(mynode.sentTP,tp,epoch,True)
                 gs = mynode.pvss.recon(comt['C'], cis, False)                
@@ -195,29 +195,9 @@ def callback(event, mynode, yournode, data):
                 for field in ['epoch','seq','newepoch','L','LQ','Re_1']:
                     sv[field] = rv[field]
                                    
-                init_dict(mynode.cis,"reconEcho",epoch,mynode.id,sv)
-                mynode.send_to_nodes({"type": "reconEcho", "v": json.dumps(sv)})
-        elif tp == "reconEcho":   
-            epoch = rv['epoch']                     
-            init_dict(mynode.cis,tp,epoch,yourid,rv)
-
-            reconReadySenders=get_value2(mynode.cis,"reconReady",epoch)
-            reconEchoSenders=get_value2(mynode.cis,"reconEcho",epoch)            
-            # print(f"=========node{mynode.id},{tp}, {mynode.cis[tp]}")
-            if len(reconEchoSenders) > 2*f or len(reconReadySenders) > f:                
-                if get_value(mynode.sentTP,tp,epoch): 
-                    return                                 
-                init_dict(mynode.sentTP,tp,epoch,True)
-
-                sv={}
-                for field in ['beaconV','epoch','seq','newepoch','L','LQ','Re_1']:
-                    sv[field] = rv[field]
-                
                 init_dict(mynode.cis,"reconReady",epoch,mynode.id,sv)
-                # print(f"\nnode{mynode.id} at epoch:{epoch}, broadcast 'reconReady'") 
                 mynode.send_to_nodes({"type": "reconReady", "v": json.dumps(sv)})
-            # else:
-            #     print(f"node{mynode.id} at {tp}, epoch: {epoch} {reconEchoSenders.keys()}, 'reconReady', {reconReadySenders.keys()}") 
+        
         elif tp == "reconReady":
             epoch = rv['epoch']            
             init_dict(mynode.cis,"reconReady",epoch,yourid,rv)
@@ -270,7 +250,7 @@ def callback(event, mynode, yournode, data):
                 # for tpi in ["initial","echo", "ready"]:
                 #     for j in range(10,20):
                 #         del mynode.msgs[tpi][str(leaderID)][str(leaderSeq-j)]
-                # for tpi in ["recon", "reconEcho", "reconReady"]:
+                # for tpi in ["reconEcho", "reconReady"]:
                 #     for j in range(10,20):
                 #         del mynode.cis[tpi][str(epoch-j)]
                         
@@ -390,9 +370,9 @@ class Consumer(BaseThread):
                 sv['seq'] = seq
                 sv['Re_1'] = node.Re_1                
                 
-                init_dict(node.cis,'recon',sv['epoch'],node.id, sv['c_i'])
-                # print(f"node{node.id} at epoch:{node.epoch}, broadcast 'recon'") 
-                node.send_to_nodes({"type": "recon", "v": json.dumps(sv)})
+                init_dict(node.cis,'reconEcho',sv['epoch'],node.id, sv['c_i'])
+                # print(f"node{node.id} at epoch:{node.epoch}, broadcast 'reconEcho'") 
+                node.send_to_nodes({"type": "reconEcho", "v": json.dumps(sv)})
 
             # else:
             #     # get_value(node.msgs,"initial",node.newL,seq)!=None:    
