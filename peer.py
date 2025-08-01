@@ -399,30 +399,13 @@ class Consumer(BaseThread):
             #     print(f"node:{node.id} waits for initial message of seq:{seq}")                    
             
            
-# from flask import Flask, render_template,request,jsonify,redirect,url_for,send_from_directory
-# class MyThread(threading.Thread):
-#     def __init__(self, node):
-#         super(MyThread, self).__init__()
-#         self.node = node
-
-#     def run(self):        
-#         app = Flask(__name__, template_folder = '.',static_folder='',static_url_path='')
-        
-#         @app.route('/',methods=["GET"])
-#         def index():
-#             attr = request.args.get("attr")
-#             print(attr)
-#             return jsonify({attr: json.dumps(getattr(self.node, attr))})
-#         print("start flask server at", port+1000)
-#         app.run('0.0.0.0', port+1000)
-
 
 
 if __name__ == '__main__':    
     node = Node(ip, port, ID, callback)    
     node.setDaemon(True)    
     node.start()   
-    time.sleep(15)# ssh remotestart.sh
+    time.sleep(10)# ssh remotestart.sh
     for j in range(int(ID)+1, n+1):
         node.connect_with_node(config["nodes"][str(j)]["ip"],config["portBase"]+j)
         myprint("Connceting  Node %s <----> %d (%s:%d)"%(ID, j, config["nodes"][str(j)]["ip"], config["portBase"]+j))           
@@ -432,6 +415,7 @@ if __name__ == '__main__':
         node.pvss.setPK(i, config["keys"][str(i)]["pk"])
     node.pvss.setKey(config["keys"][node.id])
     
+    time.sleep(3)
 
     consumer = Consumer(ID,node)
     consumer.setDaemon(True)

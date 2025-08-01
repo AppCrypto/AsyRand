@@ -23,6 +23,7 @@ TODO: Also create events when things go wrong, like a connection with a node has
 from config import config
 n=len(config["nodes"])
 f=int((n -1)/3)
+t=2*f+1
 
 
 class Queue:
@@ -127,7 +128,7 @@ class Node(threading.Thread):
         self.debug = False
 
         # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # 
-        self.pvss = PVSS(self.id, n, f+1)
+        self.pvss = PVSS(self.id, n, t)
         self.msgs={"pks":{}, "initial":{},"echo":{},"ready":{}}#producer
         self.seq = 1#producer
         self.sentTP={}
@@ -137,7 +138,7 @@ class Node(threading.Thread):
         self.epoch=1
         self.curSeq = {i:1 for i in range(1, n+1)}#consumer
         self.LQ = Queue(f)
-        # [self.LQ.put(i) for i in range(1,f+1)]
+        # [self.LQ.put(i) for i in range(1,t)]
         self.CL = {}
         for i in range(1, n+1):
             if i!=self.L:
