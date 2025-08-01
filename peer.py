@@ -165,12 +165,12 @@ def callback(event, mynode, yournode, data):
 
             comt = get_value(mynode.msgs,"initial",L,seq,L)# initial message is from L
             if get_value(mynode.sentTP,tp,epoch):#to accerlate in case another thread is running
-                init_dict(mynode.cis,tp,epoch,yourid,{'ci':rv['c_i'], 'check':False})  
+                init_dict(mynode.cis,tp,epoch,yourid,{'c_i':rv['c_i'], 'check':False})  
                 return    
             flag=False
             if comt != None:
                 flag= mynode.pvss.vrfRecon(comt['C']["C1"][yourid], yourid, rv['c_i'])
-            init_dict(mynode.cis,tp,epoch,yourid,{'ci':rv['c_i'], 'check':flag})  
+            init_dict(mynode.cis,tp,epoch,yourid,{'c_i':rv['c_i'], 'check':flag})  
 
             reconSenders = get_value2(mynode.cis,tp,epoch)
             if comt!=None and len(reconSenders) > f:
@@ -181,6 +181,7 @@ def callback(event, mynode, yournode, data):
                 for yid in ci2k:
                     if get_value(mynode.sentTP,tp,epoch):#to accerlate in case another thread is running
                         return    
+                    
                     if get_value(mynode.cis,tp,epoch,yourid,'check')\
                         or mynode.pvss.vrfRecon(comt['C']["C1"][yid], yid, ci2k[yid]["c_i"]):
                             cis[yid]=ci2k[yid]                    

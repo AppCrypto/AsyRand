@@ -18,8 +18,9 @@ import hashlib
 
 
 
-groupObj = PairingGroup("MNT159")
+
 from config import config
+groupObj = PairingGroup(config["curve"])
 
 def random_scalar():
     return groupObj.random(ZR)
@@ -29,10 +30,9 @@ class PVSS():
     def __init__(self, ID, N, t):
         self.util = SecretUtil(groupObj, verbose=False)
         self.group = groupObj
-        self.g, self.h = json.loads(config['g']), json.loads(config['h'])#self.group.random(G1),self.group.random(G1)
-        self.g2 = json.loads(config['g2'])
-        # self.pks={}        
-        # print(json.dumps({"g":self.g, "h":self.h,"g2":self.g2}))
+        # self.g, self.h, self.g2 = self.group.random(G1),self.group.random(G1),self.group.random(G2)
+        self.g, self.h = json.loads(config['g']), json.loads(config['h'])
+        self.g2 = json.loads(config['g2'])        
         self.ID=ID
         self.sk=random_scalar()
         self.pk=[self.g ** self.sk, self.g2**self.sk]
@@ -41,7 +41,7 @@ class PVSS():
         # for i in range(1,129):
         #     sk=random_scalar()   
         #     a[str(i)]={"sk":sk,"pk":[self.g ** sk, self.g2**sk]}
-        # open("keys.txt","w").write(json.dumps(a))
+        # open("./cfg/keys.txt","w").write(json.dumps(a))
         self.N=N
         self.t=t
         self.coeff = self.util.recoverCoefficients([i for i in range(1, N+1)])
