@@ -23,7 +23,7 @@ TODO: Also create events when things go wrong, like a connection with a node has
 from config import config
 n=len(config["nodes"])
 f=int((n -1)/3)
-t=2*f+1
+t=f+1
 
 
 class Queue:

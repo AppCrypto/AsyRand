@@ -160,7 +160,8 @@ if __name__ == "__main__":
     N = len(config['nodes'])
     if len(sys.argv)>1:
         N = int(sys.argv[1])
-    t=int((N -1)*2/3+1)
+    f=int((N -1)/3+1)
+    t=f+1
     sks={i: random_scalar() for i in range(0, N+1)}
     
     #print(sks)

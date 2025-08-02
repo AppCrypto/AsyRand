@@ -25,7 +25,7 @@ CTs = None
 
 n=len(config["nodes"])
 f=int((n -1)/3)
-t=f+1
+t=2*f+1
 
 def init_dict(d, *keys):
     if len(keys) < 2:
@@ -76,6 +76,9 @@ def callback(event, mynode, yournode, data):
         log=f"{mynode.id}-{yourid} thread {thread_id} start {tp}-"
         
         if tp in ["initial","echo", "ready"]:
+            for seq in rv['seqs']:   
+                if get_value(mynode.sentTP,tp,rv['ld'],seq):
+                    return
             mynode.producerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
             # TODO
             # if mynode.curSeq[int(mynode.id)] >= rv['seqs'][0] + 10:
@@ -87,6 +90,9 @@ def callback(event, mynode, yournode, data):
                     init_dict(mynode.sentTP,tp,rv['ld'],seq,False)                
                 
         elif tp in ["reconEcho", "reconReady"]:
+            if get_value(mynode.sentTP,tp,rv['epoch']): 
+                return                     
+                
             mynode.consumerRecvSize+=len(str(base64.b64encode(zlib.compress(str(data).encode('utf-8'), 6) + b'zlib')))   
             # TODO TEST
             # if mynode.epoch >= rv['newepoch']:
@@ -131,7 +137,7 @@ def callback(event, mynode, yournode, data):
             # print(mynode.id, "recieve echo from",yourid, seq, comtsH,len(mynode.msgs["echo"][seq]))
             echoSenders = get_value2(mynode.msgs, "echo",ld, seqs[0])
             readySenders = get_value2(mynode.msgs, "ready",ld, seqs[0])
-            if (len(echoSenders) > 2*f) or (len(readySenders) > f):
+            if (len(echoSenders) >= 2*f+1) or (len(readySenders) >= f+1):
                 for seq in seqs:
                     if get_value(mynode.sentTP,tp,ld,seq):
                         return                                
@@ -146,7 +152,7 @@ def callback(event, mynode, yournode, data):
             for seq in seqs:
                 init_dict(mynode.msgs, tp,ld,seq,yourid,comtsH)
             readySenders = get_value2(mynode.msgs, "ready",ld, seqs[0])
-            if len(readySenders) > 2*f: 
+            if len(readySenders) >= 2*f+1: 
                 for seq in seqs:
                     if get_value(mynode.sentTP,tp,ld,seq):
                         return
@@ -166,27 +172,31 @@ def callback(event, mynode, yournode, data):
 
             comt = get_value(mynode.msgs,"initial",L,seq,L)# initial message is from L
             if get_value(mynode.sentTP,tp,epoch):#to accerlate in case another thread is running
-                init_dict(mynode.cis,tp,epoch,yourid,{'c_i':rv['c_i'], 'check':False})  
+                init_dict(mynode.cis,tp,epoch,yourid,{'c_i':rv['c_i'], 'needCheck':False})  
                 return    
             flag=False
             if comt != None:
                 flag= mynode.pvss.vrfRecon(comt['C']["C1"][yourid], yourid, rv['c_i'])
-            init_dict(mynode.cis,tp,epoch,yourid,{'c_i':rv['c_i'], 'check':flag})  
+            init_dict(mynode.cis,tp,epoch,yourid,{'c_i':rv['c_i'], 'needCheck':flag})  
 
             reconSenders = get_value2(mynode.cis,tp,epoch)
-            if comt!=None and len(reconSenders) > 2*f:
+            if comt!=None and len(reconSenders) >= t:
                 if get_value(mynode.sentTP,tp,epoch):
+                    if mynode.id == "1":
+                        print(mynode.id,"============waste 0",epoch,flag)
                     return
                 cis={}
                 ci2k=get_value(mynode.cis,tp,epoch).copy()
                 for yid in ci2k:
                     if get_value(mynode.sentTP,tp,epoch):#to accerlate in case another thread is running
+                        print(mynode.id,"============waste 1")
                         return    
                     
-                    if get_value(mynode.cis,tp,epoch,yourid,'check')\
-                        or mynode.pvss.vrfRecon(comt['C']["C1"][yid], yid, ci2k[yid]["c_i"]):
-                            cis[yid]=ci2k[yid]                    
-                if len(cis.keys()) <= 2*f:
+                    if get_value(mynode.cis,tp,epoch,yourid,'needCheck') or mynode.pvss.vrfRecon(comt['C']["C1"][yid], yid, ci2k[yid]["c_i"]):
+                        cis[yid]=ci2k[yid]
+
+                if len(cis.keys()) < t:
+                    print(mynode.id,"============waste 2")
                     return
                 init_dict(mynode.sentTP,tp,epoch,True)
                 gs = mynode.pvss.recon(comt['C'], cis, False)                
@@ -205,7 +215,7 @@ def callback(event, mynode, yournode, data):
             
             reconReadySenders=get_value2(mynode.cis,"reconReady",epoch)
             # print(f"\n=========node{mynode.id},{tp}, {mynode.cis[tp]}\n")
-            if len(reconReadySenders) > 2*f: 
+            if len(reconReadySenders) >= 2*f+1: 
                 if get_value(mynode.sentTP,tp,epoch): 
                     return                     
                 
